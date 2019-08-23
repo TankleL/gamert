@@ -1,7 +1,16 @@
 #gamert level cmakelists
 cmake_minimum_required (VERSION 3.0)
-message("enter-level > gamert")
+message("enter-level > gamert ------------------------------------------------")
 
+#Look for Vulkan.
+message("look for vulkan -----------------------------------------------------")
+find_package(Vulkan REQUIRED)
+
+message("Vulkan found? " ${VULKAN_FOUND})
+message("Vulkan libraries: " ${Vulkan_LIBRARIES})
+message("Vulkan include: " ${Vulkan_INCLUDE_DIRS})
+
+#Add inc and src files
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	include_directories(inc/win)
 	FILE(GLOB_RECURSE GAMERT_OS_RELATED_INC_FILES "inc/win/*.hpp")
@@ -16,10 +25,24 @@ elseif(${GRT_TARGET_OS_PLATFORM} STREQUAL "IOS")
 	aux_source_directory (src/ios GAMERT_OS_RELATED_SRC_FILES)
 endif()
 
+include_directories(${Vulkan_INCLUDE_DIRS})
+
+include_directories(inc/vklayer)
+FILE(GLOB_RECURSE GAMERT_VKLAYER_INC_FILES "inc/vklayer/*.hpp")
+aux_source_directory(src/vklayer GAMERT_VKLAYER_SRC_FILES)
+
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
-	add_executable( gamert WIN32 ${GAMERT_OS_RELATED_INC_FILES} ${GAMERT_OS_RELATED_SRC_FILES} )
+	message("[gamert] Add executable and link libs -------------------------------")
+	add_executable( gamert WIN32
+		#Header files:
+		${GAMERT_VKLAYER_INC_FILES}
+		${GAMERT_OS_RELATED_INC_FILES}
+		#Source files:
+		${GAMERT_VKLAYER_SRC_FILES}
+		${GAMERT_OS_RELATED_SRC_FILES} )
+	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 else()
 # TODO: Support other platforms
 endif()
 
-message("leave-level < gamert")
+message("leave-level < gamert ------------------------------------------------")

@@ -1,6 +1,6 @@
 #Top level cmakelists
 cmake_minimum_required (VERSION 3.0)
-message("enter-level > top level")
+message("enter-level > top level ---------------------------------------------")
 
 project( gamert )
 
@@ -9,5 +9,5 @@ SET(GRT_TARGET_OS_PLATFORM "Windows")
 
 add_subdirectory( gamert )
 
-message("leave-level < top level")
+message("leave-level < top level ---------------------------------------------")
 
