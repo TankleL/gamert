@@ -44,7 +44,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	ShowWindow(hwnd, nCmdShow);
 
 	// Create VKApp
-	VKApplication vkapp;
+	VKApplication vkapp(hwnd);
 	vkapp.init();
 
 	// Run the message loop.

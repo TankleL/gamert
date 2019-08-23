@@ -12,10 +12,16 @@ bool VKApplication::s_enabled_validation_layer = true;
 bool VKApplication::s_enabled_validation_layer = false;
 #endif
 
-
 std::vector<const char*> VKApplication::s_validation_layers = 
 {
 	 "VK_LAYER_KHRONOS_validation"
+};
+
+std::vector<const char*> VKApplication::s_enabled_instance_extension =
+{
+#if defined(WIN32)
+	"VK_KHR_win32_surface"
+#endif
 };
 
 VkResult VKApplication::s_create_debug_utils_messenger_ext(
@@ -119,18 +125,32 @@ uint32_t VKApplication::s_get_queue_family_index(VkPhysicalDevice device)
 	return idx;
 }
 
+#if defined(WIN32)
+VKApplication::VKApplication(HWND hwnd) noexcept
+	: _hwnd(hwnd)
+	, _vkinst(VK_NULL_HANDLE)
+	, _vkdbgmsgr(VK_NULL_HANDLE)
+	, _vkphydev(VK_NULL_HANDLE)
+	, _vkdevice(VK_NULL_HANDLE)
+	, _vkgque(VK_NULL_HANDLE)
+	, _vksrf(VK_NULL_HANDLE)
+{}
+#else
 VKApplication::VKApplication() noexcept
 	: _vkinst(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
 	, _vkphydev(VK_NULL_HANDLE)
 	, _vkdevice(VK_NULL_HANDLE)
 	, _vkgque(VK_NULL_HANDLE)
+	, _vksrf(VK_NULL_HANDLE)
 {}
+#endif
 
 void VKApplication::init()
 {
 	_create_instance();
 	_setup_debug();
+	_create_surface();
 	_pick_physical_device();
 	_create_logic_device();
 }
@@ -142,6 +162,9 @@ void VKApplication::uninit()
 {
 	// clean up vk device
 	vkDestroyDevice(_vkdevice, nullptr);
+
+	// clean up surface
+	vkDestroySurfaceKHR(_vkinst, _vksrf, nullptr);
 
 	// clean up vk debug utils
 	if (s_enabled_validation_layer) {
@@ -165,10 +188,12 @@ void VKApplication::_create_instance()
 	vkapp_info.pEngineName = "gamert engine";
 	vkapp_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	vkapp_info.apiVersion = VK_API_VERSION_1_0;
-
+	
 	VkInstanceCreateInfo vkapp_create_info = {};
 	vkapp_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	vkapp_create_info.pApplicationInfo = &vkapp_info;
+	vkapp_create_info.enabledExtensionCount = (uint32_t)s_enabled_instance_extension.size();
+	vkapp_create_info.ppEnabledExtensionNames = s_enabled_instance_extension.data();
 
 	VkDebugUtilsMessengerCreateInfoEXT vkdebug_create_info;
 	if (s_enabled_validation_layer) {
@@ -264,6 +289,20 @@ void VKApplication::_create_logic_device()
 	}
 
 	vkGetDeviceQueue(_vkdevice, qfindex, 0, &_vkgque);
+}
+
+void VKApplication::_create_surface()
+{
+	VkWin32SurfaceCreateInfoKHR createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	createInfo.hwnd = _hwnd;
+	createInfo.hinstance = GetModuleHandle(nullptr);
+
+	VkResult vkr = vkCreateWin32SurfaceKHR(_vkinst, &createInfo, nullptr, &_vksrf);
+
+	if (vkr != VK_SUCCESS) {
+		throw std::runtime_error("failed to create window surface!");
+	}
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL __debug_callback(
