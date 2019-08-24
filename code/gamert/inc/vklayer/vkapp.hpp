@@ -10,6 +10,8 @@
 #include <vector>
 #include <iostream>
 #include <cstdint>
+#include <set>
+#include <algorithm>
 
 class VKApplication
 {
@@ -32,7 +34,31 @@ private:
 	void _create_surface();
 	void _pick_physical_device();
 	void _create_logic_device();
+	void _create_swapchain();
+	void _create_image_views();
 	
+private:
+	typedef struct QueueFamilyIndices {
+		QueueFamilyIndices()
+			: graphics_family(UINT32_MAX)
+			, present_family(UINT32_MAX)
+		{}
+
+		uint32_t	graphics_family;
+		uint32_t	present_family;
+
+		bool is_complete() {
+			return (graphics_family != UINT32_MAX &&
+					present_family != UINT32_MAX);
+		}
+	} queue_family_indices_t;
+
+	typedef struct SwapChainSupportDetails {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> presentModes;
+	} swapchain_support_details_t;
+
 private:
 	static VkResult s_create_debug_utils_messenger_ext(
 		VkInstance vkinst,
@@ -49,17 +75,38 @@ private:
 
 	static void s_populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info);
 
-	static bool s_is_device_suitable(VkPhysicalDevice device);
+	static QueueFamilyIndices s_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+	static bool s_is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 	static uint32_t s_get_queue_family_index(VkPhysicalDevice device);
 
+	static bool s_check_device_extension_support(VkPhysicalDevice device);
+
+	static swapchain_support_details_t s_query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+	VkSurfaceFormatKHR s_choose_swapsurface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
+
+	VkPresentModeKHR s_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
+
+	VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height);
+
 private:
+	uint32_t					_view_width;
+	uint32_t					_view_height;
+
 	VkInstance					_vkinst;		// vulkan instance
 	VkDebugUtilsMessengerEXT	_vkdbgmsgr;		// vulkan debug messenger
 	VkPhysicalDevice			_vkphydev;		// vulkan physical device
 	VkDevice					_vkdevice;
 	VkQueue						_vkgque;		// vulkan graphics queue
+	VkQueue						_vkpque;		// vulkan present queue
 	VkSurfaceKHR				_vksrf;			// vulkan surface
+	VkSwapchainKHR				_vkschain;		// vulkan swapchain
+	std::vector<VkImage>		_vkscimgs;		// vulkan swapchain images
+	VkFormat					_vkscimgfmt;	// vulkan swapchain image format
+	VkExtent2D					_vkscext;		// vulkan swapchain extent 2D
+	std::vector<VkImageView>	_vkscimgviews;	// vulkan swapchain image views
 
 #if defined(WIN32)
 private:
@@ -68,6 +115,7 @@ private:
 
 private:
 	static std::vector<const char*>	s_enabled_instance_extension;
+	static std::vector<const char*>	s_enabled_device_extension;
 	static bool						s_enabled_validation_layer;
 	static std::vector<const char*> s_validation_layers;
 };
