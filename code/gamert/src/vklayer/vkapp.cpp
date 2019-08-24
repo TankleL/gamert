@@ -281,6 +281,8 @@ VKApplication::VKApplication(HWND hwnd) noexcept
 	: _hwnd(hwnd)
 	, _view_width(1000)
 	, _view_height(800)
+	, _max_frames_in_flight(2)
+	, _cur_frame_idx(0)
 	, _vkinst(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
 	, _vkphydev(VK_NULL_HANDLE)
@@ -291,10 +293,17 @@ VKApplication::VKApplication(HWND hwnd) noexcept
 	, _vkschain(VK_NULL_HANDLE)
 	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
 	, _vkscext{ 0 }
+	, _vkrdrpass(VK_NULL_HANDLE)
+	, _vkcmdpool(VK_NULL_HANDLE)
 {}
 #else
 VKApplication::VKApplication() noexcept
-	: _vkinst(VK_NULL_HANDLE)
+	: _hwnd(hwnd)
+	, _view_width(1000)
+	, _view_height(800)
+	, _max_frames_in_flight(2)
+	, _cur_frame_idx(0)
+	, _vkinst(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
 	, _vkphydev(VK_NULL_HANDLE)
 	, _vkdevice(VK_NULL_HANDLE)
@@ -304,6 +313,8 @@ VKApplication::VKApplication() noexcept
 	, _vkschain(VK_NULL_HANDLE)
 	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
 	, _vkscext{ 0 }
+	, _vkrdrpass(VK_NULL_HANDLE)
+	, _vkcmdpool(VK_NULL_HANDLE)
 {}
 #endif
 
@@ -315,13 +326,41 @@ void VKApplication::init()
 	_pick_physical_device();
 	_create_logic_device();
 	_create_swapchain();
+	_create_image_views();
+	_create_render_pass();
+	_create_frame_buffers();
+	_create_cmd_pool();
+	_create_cmd_buffers();
+	_create_sync_objects();
 }
 
 void VKApplication::tick()
-{}
+{
+	_drawframe();
+}
 
 void VKApplication::uninit()
 {
+	// clean up sync objects
+	for (size_t i = 0; i < _max_frames_in_flight; ++i)
+	{
+		vkDestroySemaphore(_vkdevice, _vksp_imgavaliable[i], nullptr);
+		vkDestroySemaphore(_vkdevice, _vksp_rdrfinished[i], nullptr);
+		vkDestroyFence(_vkdevice, _vkfences_inflight[i], nullptr);
+	}
+
+	// clean up command pool
+	vkDestroyCommandPool(_vkdevice, _vkcmdpool, nullptr);
+
+	// clean up frame buffers
+	for (const auto& fb : _vksc_framebuffers)
+	{
+		vkDestroyFramebuffer(_vkdevice, fb, nullptr);
+	}
+
+	// clean up render pass
+	vkDestroyRenderPass(_vkdevice, _vkrdrpass, nullptr);
+
 	// clean up swapchain image views
 	for (const auto& iv : _vkscimgviews)
 	{
@@ -338,7 +377,8 @@ void VKApplication::uninit()
 	vkDestroySurfaceKHR(_vkinst, _vksrf, nullptr);
 
 	// clean up vk debug utils
-	if (s_enabled_validation_layer) {
+	if (s_enabled_validation_layer)
+	{
 		s_destroy_debug_utils_messenger_ext(_vkinst, _vkdbgmsgr, nullptr);
 	}
 
@@ -566,6 +606,206 @@ void VKApplication::_create_image_views()
 	}
 }
 
+void VKApplication::_create_render_pass()
+{
+	VkAttachmentDescription color_attachment = {};
+	color_attachment.format = _vkscimgfmt;
+	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference color_attachment_ref = {};
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &color_attachment_ref;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &color_attachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	if (vkCreateRenderPass(_vkdevice, &renderPassInfo, nullptr, &_vkrdrpass) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create render pass!");
+	}
+}
+
+void VKApplication::_create_frame_buffers()
+{
+	_vksc_framebuffers.resize(_vkscimgviews.size());
+
+	for (size_t i = 0; i < _vkscimgviews.size(); ++i)
+	{
+		VkImageView attachments[] =
+		{
+			_vkscimgviews[i]
+		};
+
+		VkFramebufferCreateInfo framebuffer_info = {};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = _vkrdrpass;
+		framebuffer_info.attachmentCount = 1;
+		framebuffer_info.pAttachments = attachments;
+		framebuffer_info.width = _vkscext.width;
+		framebuffer_info.height = _vkscext.height;
+		framebuffer_info.layers = 1;
+
+		if (vkCreateFramebuffer(_vkdevice, &framebuffer_info, nullptr, &_vksc_framebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+	}
+}
+
+void VKApplication::_create_cmd_pool()
+{
+	queue_family_indices_t indices = s_find_queue_families(_vkphydev, _vksrf);
+
+	VkCommandPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.queueFamilyIndex = indices.graphics_family;
+
+	if (vkCreateCommandPool(_vkdevice, &pool_info, nullptr, &_vkcmdpool) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create command pool!");
+	}
+}
+
+void VKApplication::_create_cmd_buffers()
+{
+	_vkcmdbuffers.resize(_vksc_framebuffers.size());
+
+	VkCommandBufferAllocateInfo alloc_info = {};
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.commandPool = _vkcmdpool;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandBufferCount = (uint32_t)_vkcmdbuffers.size();
+
+	if (vkAllocateCommandBuffers(_vkdevice, &alloc_info, _vkcmdbuffers.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+
+	for (size_t i = 0; i < _vkcmdbuffers.size(); i++) {
+		VkCommandBufferBeginInfo begin_info = {};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		if (vkBeginCommandBuffer(_vkcmdbuffers[i], &begin_info) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
+
+		VkRenderPassBeginInfo render_pass_info = {};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = _vkrdrpass;
+		render_pass_info.framebuffer = _vksc_framebuffers[i];
+		render_pass_info.renderArea.offset = { 0, 0 };
+		render_pass_info.renderArea.extent = _vkscext;
+
+		VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		render_pass_info.clearValueCount = 1;
+		render_pass_info.pClearValues = &clear_color;
+
+		vkCmdBeginRenderPass(_vkcmdbuffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		//vkCmdBindPipeline(_vkcmdbuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+		//vkCmdDraw(_vkcmdbuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(_vkcmdbuffers[i]);
+
+		if (vkEndCommandBuffer(_vkcmdbuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to record command buffer!");
+		}
+	}
+}
+
+void VKApplication::_create_sync_objects()
+{
+	_vksp_imgavaliable.resize(_max_frames_in_flight);
+	_vksp_rdrfinished.resize(_max_frames_in_flight);
+	_vkfences_inflight.resize(_max_frames_in_flight);
+
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for (size_t i = 0; i < _max_frames_in_flight; ++i)
+	{
+		if (vkCreateSemaphore(_vkdevice, &semaphore_info, nullptr, &_vksp_imgavaliable[i]) != VK_SUCCESS ||
+			vkCreateSemaphore(_vkdevice, &semaphore_info, nullptr, &_vksp_rdrfinished[i]) != VK_SUCCESS ||
+			vkCreateFence(_vkdevice, &fence_info, nullptr, &_vkfences_inflight[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create synchronization objects for a frame!");
+		}
+	}
+}
+
+void VKApplication::_drawframe()
+{
+	vkWaitForFences(_vkdevice, 1, &_vkfences_inflight[_cur_frame_idx], VK_TRUE, UINT64_MAX);
+	vkResetFences(_vkdevice, 1, &_vkfences_inflight[_cur_frame_idx]);
+
+	uint32_t img_idx;
+	vkAcquireNextImageKHR(
+		_vkdevice,
+		_vkschain,
+		UINT64_MAX,
+		_vksp_imgavaliable[_cur_frame_idx],
+		VK_NULL_HANDLE,
+		&img_idx);
+
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore wait_semaphores[] = { _vksp_imgavaliable[_cur_frame_idx] };
+	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = wait_semaphores;
+	submit_info.pWaitDstStageMask = wait_stages;
+
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &_vkcmdbuffers[img_idx];
+
+	VkSemaphore signalSemaphores[] = { _vksp_rdrfinished[_cur_frame_idx] };
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = signalSemaphores;
+
+	if (vkQueueSubmit(_vkgque, 1, &submit_info, _vkfences_inflight[_cur_frame_idx]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+	VkPresentInfoKHR present_info = {};
+	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapchains[] = { _vkschain };
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = swapchains;
+
+	present_info.pImageIndices = &img_idx;
+
+	vkQueuePresentKHR(_vkpque, &present_info);
+
+	_cur_frame_idx = (_cur_frame_idx + 1) % _max_frames_in_flight;
+}
 
 /* ****************************************************************************
 |                          [Region] C-Style Functions                         |

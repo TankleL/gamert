@@ -1,6 +1,8 @@
 #include "osenv.hpp"
 #include "vkapp.hpp"
 
+VKApplication* vkapp = nullptr;
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -44,8 +46,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	ShowWindow(hwnd, nCmdShow);
 
 	// Create VKApp
-	VKApplication vkapp(hwnd);
-	vkapp.init();
+	vkapp = new VKApplication(hwnd);
+	vkapp->init();
 
 	// Run the message loop.
 	MSG msg = { };
@@ -53,9 +55,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+
+		vkapp->tick();
 	}
 
-	vkapp.uninit();
+	vkapp->uninit();
 
 	return 0;
 }

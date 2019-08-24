@@ -21,7 +21,6 @@ public:
 #else
 	VKApplication() noexcept;
 #endif
-	
 
 public:
 	void init();
@@ -36,7 +35,15 @@ private:
 	void _create_logic_device();
 	void _create_swapchain();
 	void _create_image_views();
-	
+	void _create_render_pass();
+	// TODO: create graphics pipleline
+	void _create_frame_buffers();
+	void _create_cmd_pool();
+	void _create_cmd_buffers();
+	void _create_sync_objects();
+
+	void _drawframe();
+
 private:
 	typedef struct QueueFamilyIndices {
 		QueueFamilyIndices()
@@ -92,22 +99,32 @@ private:
 	VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height);
 
 private:
-	uint32_t					_view_width;
-	uint32_t					_view_height;
+	uint32_t						_view_width;
+	uint32_t						_view_height;
+	uint32_t						_max_frames_in_flight;
+	size_t							_cur_frame_idx;
 
-	VkInstance					_vkinst;		// vulkan instance
-	VkDebugUtilsMessengerEXT	_vkdbgmsgr;		// vulkan debug messenger
-	VkPhysicalDevice			_vkphydev;		// vulkan physical device
-	VkDevice					_vkdevice;
-	VkQueue						_vkgque;		// vulkan graphics queue
-	VkQueue						_vkpque;		// vulkan present queue
-	VkSurfaceKHR				_vksrf;			// vulkan surface
-	VkSwapchainKHR				_vkschain;		// vulkan swapchain
-	std::vector<VkImage>		_vkscimgs;		// vulkan swapchain images
-	VkFormat					_vkscimgfmt;	// vulkan swapchain image format
-	VkExtent2D					_vkscext;		// vulkan swapchain extent 2D
-	std::vector<VkImageView>	_vkscimgviews;	// vulkan swapchain image views
-
+	VkInstance						_vkinst;		// vulkan instance
+	VkDebugUtilsMessengerEXT		_vkdbgmsgr;		// vulkan debug messenger
+	VkPhysicalDevice				_vkphydev;		// vulkan physical device
+	VkDevice						_vkdevice;
+	VkQueue							_vkgque;		// vulkan graphics queue
+	VkQueue							_vkpque;		// vulkan present queue
+	VkSurfaceKHR					_vksrf;			// vulkan surface
+	VkSwapchainKHR					_vkschain;		// vulkan swapchain
+	std::vector<VkImage>			_vkscimgs;		// vulkan swapchain images
+	VkFormat						_vkscimgfmt;	// vulkan swapchain image format
+	VkExtent2D						_vkscext;		// vulkan swapchain extent 2D
+	std::vector<VkImageView>		_vkscimgviews;	// vulkan swapchain image views
+	VkRenderPass					_vkrdrpass;		// vulkan render pass
+	// TODO: graphics pipeline
+	std::vector<VkFramebuffer>		_vksc_framebuffers;	// vulkan swapchain framebuffers
+	VkCommandPool					_vkcmdpool;
+	std::vector<VkCommandBuffer>	_vkcmdbuffers;
+	std::vector<VkSemaphore>		_vksp_imgavaliable;	// vulkan semaphores - image avaliable
+	std::vector<VkSemaphore>		_vksp_rdrfinished;	// vulkan semaphores - rendering finished
+	std::vector<VkFence>			_vkfences_inflight;		// vulkan in-flight fences
+		
 #if defined(WIN32)
 private:
 	HWND		_hwnd;
