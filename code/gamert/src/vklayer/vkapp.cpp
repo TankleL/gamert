@@ -712,7 +712,7 @@ void VKApplication::_create_cmd_buffers()
 		render_pass_info.renderArea.offset = { 0, 0 };
 		render_pass_info.renderArea.extent = _vkscext;
 
-		VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		VkClearValue clear_color = { 0.18f, 0.18f, 0.28f, 1.0f };
 		render_pass_info.clearValueCount = 1;
 		render_pass_info.pClearValues = &clear_color;
 
