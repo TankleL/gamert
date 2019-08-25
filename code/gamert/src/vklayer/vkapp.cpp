@@ -528,7 +528,7 @@ void VKApplication::_create_swapchain()
 	SwapChainSupportDetails swapchain_support = s_query_swapchain_support(_vkphydev, _vksrf);
 
 	VkSurfaceFormatKHR surface_format = s_choose_swapsurface_format(swapchain_support.formats);
-	VkPresentModeKHR presentMode = s_choose_swap_present_mode(swapchain_support.presentModes);
+	VkPresentModeKHR present_mode = s_choose_swap_present_mode(swapchain_support.presentModes);
 	VkExtent2D extent = s_choose_swap_extent(swapchain_support.capabilities, _view_width, _view_height);
 
 	uint32_t image_count = swapchain_support.capabilities.minImageCount + 1;
@@ -563,12 +563,13 @@ void VKApplication::_create_swapchain()
 
 	create_info.preTransform = swapchain_support.capabilities.currentTransform;
 	create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	create_info.presentMode = presentMode;
+	create_info.presentMode = present_mode;
 	create_info.clipped = VK_TRUE;
 
 	create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	if (vkCreateSwapchainKHR(_vkdevice, &create_info, nullptr, &_vkschain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(_vkdevice, &create_info, nullptr, &_vkschain) != VK_SUCCESS)
+	{
 		throw std::runtime_error("failed to create swap chain!");
 	}
 
@@ -696,7 +697,8 @@ void VKApplication::_create_cmd_buffers()
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 
-	for (size_t i = 0; i < _vkcmdbuffers.size(); i++) {
+	for (size_t i = 0; i < _vkcmdbuffers.size(); ++i)
+	{
 		VkCommandBufferBeginInfo begin_info = {};
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -781,9 +783,9 @@ void VKApplication::_drawframe()
 	submit_info.commandBufferCount = 1;
 	submit_info.pCommandBuffers = &_vkcmdbuffers[img_idx];
 
-	VkSemaphore signalSemaphores[] = { _vksp_rdrfinished[_cur_frame_idx] };
+	VkSemaphore signal_semaphores[] = { _vksp_rdrfinished[_cur_frame_idx] };
 	submit_info.signalSemaphoreCount = 1;
-	submit_info.pSignalSemaphores = signalSemaphores;
+	submit_info.pSignalSemaphores = signal_semaphores;
 
 	if (vkQueueSubmit(_vkgque, 1, &submit_info, _vkfences_inflight[_cur_frame_idx]) != VK_SUCCESS)
 	{
@@ -794,7 +796,7 @@ void VKApplication::_drawframe()
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
 	present_info.waitSemaphoreCount = 1;
-	present_info.pWaitSemaphores = signalSemaphores;
+	present_info.pWaitSemaphores = signal_semaphores;
 
 	VkSwapchainKHR swapchains[] = { _vkschain };
 	present_info.swapchainCount = 1;
