@@ -26,19 +26,33 @@ elseif(${GRT_TARGET_OS_PLATFORM} STREQUAL "IOS")
 endif()
 
 include_directories(${Vulkan_INCLUDE_DIRS})
+include_directories(inc)
 
-include_directories(inc/vklayer)
 FILE(GLOB_RECURSE GAMERT_VKLAYER_INC_FILES "inc/vklayer/*.hpp")
+include_directories(inc/vklayer)
 aux_source_directory(src/vklayer GAMERT_VKLAYER_SRC_FILES)
+
+FILE(GLOB_RECURSE GAMERT_GRAPHICS_INC_FILES "inc/graphics/*.hpp")
+include_directories(inc/graphics)
+aux_source_directory(src/graphics GAMERT_GRAPHICS_SRC_FILES)
+
+FILE(GLOB_RECURSE GAMERT_LOGIC_INC_FILES "inc/logic/*.hpp")
+include_directories(inc/logic)
+aux_source_directory(src/logic GAMERT_LOGIC_SRC_FILES)
 
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	message("[gamert] Add executable and link libs -------------------------------")
 	add_executable( gamert WIN32
 		#Header files:
+		"inc/pre-req.hpp"
 		${GAMERT_VKLAYER_INC_FILES}
+		${GAMERT_GRAPHICS_INC_FILES}
+		${GAMERT_LOGIC_INC_FILES}
 		${GAMERT_OS_RELATED_INC_FILES}
 		#Source files:
 		${GAMERT_VKLAYER_SRC_FILES}
+		${GAMERT_GRAPHICS_SRC_FILES}
+		${GAMERT_LOGIC_SRC_FILES}
 		${GAMERT_OS_RELATED_SRC_FILES} )
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 else()

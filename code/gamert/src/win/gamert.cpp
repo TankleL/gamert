@@ -51,12 +51,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	// Run the message loop.
 	MSG msg = { };
-	while (GetMessage(&msg, NULL, 0, 0))
+	while (msg.message != WM_QUIT)
 	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-
-		vkapp->tick();
+		if (PeekMessage(&msg, NULL, NULL, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			vkapp->tick();
+			Sleep(16);
+		}
 	}
 
 	vkapp->uninit();

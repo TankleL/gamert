@@ -1,4 +1,6 @@
 #include "vkapp.hpp"
+#include "logicmgr.hpp"
+#include "rendermgr.hpp"
 
 /* ****************************************************************************
 |                        [Region] Forward Declaration                         |
@@ -336,6 +338,8 @@ void VKApplication::init()
 
 void VKApplication::tick()
 {
+	LogicMgr::get_instance().update_frame();
+	RenderMgr::get_instance().render_frame();
 	_drawframe();
 }
 
