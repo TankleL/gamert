@@ -24,8 +24,11 @@ public:
 
 public:
 	void init();
+
 	void tick();
 	void uninit();
+
+	void on_view_resized();
 
 private:
 	void _create_instance();
@@ -41,6 +44,9 @@ private:
 	void _create_cmd_pool();
 	void _create_cmd_buffers();
 	void _create_sync_objects();
+
+	void _recreate_swapchain_related();
+	void _clean_up_swapchain();
 
 	void _drawframe();
 
@@ -96,13 +102,12 @@ private:
 
 	VkPresentModeKHR s_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
 
-	VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height);
+	VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 private:
-	uint32_t						_view_width;
-	uint32_t						_view_height;
 	uint32_t						_max_frames_in_flight;
 	size_t							_cur_frame_idx;
+	bool							_swapchain_recreated;
 
 	VkInstance						_vkinst;		// vulkan instance
 	VkDebugUtilsMessengerEXT		_vkdbgmsgr;		// vulkan debug messenger

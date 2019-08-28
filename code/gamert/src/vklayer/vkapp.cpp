@@ -252,7 +252,7 @@ VkPresentModeKHR VKApplication::s_choose_swap_present_mode(
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height)
+VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
 	if (capabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -260,6 +260,24 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 	}
 	else
 	{
+		int width = 0;
+		int height = 0;
+
+#if defined(WIN32)
+		::RECT client_rect;
+		if (::GetClientRect(_hwnd, &client_rect))
+		{
+			width = client_rect.right - client_rect.left;
+			height = client_rect.bottom - client_rect.top;
+		}
+		else
+		{
+			throw std::runtime_error("failed to get view size; GetClientRect returns errored!");
+		}
+#else
+	Compile error !
+		TODO: Support getting view size !
+#endif
 		VkExtent2D actual_extent = { width, height };
 
 		actual_extent.width = max(
@@ -281,10 +299,9 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 #if defined(WIN32)
 VKApplication::VKApplication(HWND hwnd) noexcept
 	: _hwnd(hwnd)
-	, _view_width(1000)
-	, _view_height(800)
 	, _max_frames_in_flight(2)
 	, _cur_frame_idx(0)
+	, _swapchain_recreated(false)
 	, _vkinst(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
 	, _vkphydev(VK_NULL_HANDLE)
@@ -301,10 +318,9 @@ VKApplication::VKApplication(HWND hwnd) noexcept
 #else
 VKApplication::VKApplication() noexcept
 	: _hwnd(hwnd)
-	, _view_width(1000)
-	, _view_height(800)
 	, _max_frames_in_flight(2)
 	, _cur_frame_idx(0)
+	, _swapchain_recreated(false)
 	, _vkinst(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
 	, _vkphydev(VK_NULL_HANDLE)
@@ -338,6 +354,7 @@ void VKApplication::init()
 
 void VKApplication::tick()
 {
+	vkDeviceWaitIdle(_vkdevice);
 	LogicMgr::get_instance().update_frame();
 	RenderMgr::get_instance().render_frame();
 	_drawframe();
@@ -345,6 +362,9 @@ void VKApplication::tick()
 
 void VKApplication::uninit()
 {
+	// clean up swapchain
+	_clean_up_swapchain();
+
 	// clean up sync objects
 	for (size_t i = 0; i < _max_frames_in_flight; ++i)
 	{
@@ -355,24 +375,6 @@ void VKApplication::uninit()
 
 	// clean up command pool
 	vkDestroyCommandPool(_vkdevice, _vkcmdpool, nullptr);
-
-	// clean up frame buffers
-	for (const auto& fb : _vksc_framebuffers)
-	{
-		vkDestroyFramebuffer(_vkdevice, fb, nullptr);
-	}
-
-	// clean up render pass
-	vkDestroyRenderPass(_vkdevice, _vkrdrpass, nullptr);
-
-	// clean up swapchain image views
-	for (const auto& iv : _vkscimgviews)
-	{
-		vkDestroyImageView(_vkdevice, iv, nullptr);
-	}
-
-	// clean up swapchain
-	vkDestroySwapchainKHR(_vkdevice, _vkschain, nullptr);
 
 	// clean up vk device
 	vkDestroyDevice(_vkdevice, nullptr);
@@ -388,6 +390,15 @@ void VKApplication::uninit()
 
 	// clean up vk instance
 	vkDestroyInstance(_vkinst, nullptr);
+}
+
+void VKApplication::on_view_resized()
+{
+	if (_vkdevice != VK_NULL_HANDLE)
+	{
+		_recreate_swapchain_related();
+		_swapchain_recreated = true;
+	}
 }
 
 void VKApplication::_create_instance()
@@ -533,7 +544,7 @@ void VKApplication::_create_swapchain()
 
 	VkSurfaceFormatKHR surface_format = s_choose_swapsurface_format(swapchain_support.formats);
 	VkPresentModeKHR present_mode = s_choose_swap_present_mode(swapchain_support.presentModes);
-	VkExtent2D extent = s_choose_swap_extent(swapchain_support.capabilities, _view_width, _view_height);
+	VkExtent2D extent = s_choose_swap_extent(swapchain_support.capabilities);
 
 	uint32_t image_count = swapchain_support.capabilities.minImageCount + 1;
 	if (swapchain_support.capabilities.maxImageCount > 0 &&
@@ -761,19 +772,64 @@ void VKApplication::_create_sync_objects()
 	}
 }
 
+
+void VKApplication::_recreate_swapchain_related()
+{
+	vkDeviceWaitIdle(_vkdevice);
+
+	_clean_up_swapchain();
+
+	_create_swapchain();
+	_create_image_views();
+	_create_render_pass();
+	_create_frame_buffers();
+	_create_cmd_buffers();
+}
+
+
+void VKApplication::_clean_up_swapchain()
+{
+	// clean up frame buffers
+	for (const auto& fb : _vksc_framebuffers)
+	{
+		vkDestroyFramebuffer(_vkdevice, fb, nullptr);
+	}
+
+	// clean up render pass
+	vkDestroyRenderPass(_vkdevice, _vkrdrpass, nullptr);
+
+	// clean up swapchain image views
+	for (const auto& iv : _vkscimgviews)
+	{
+		vkDestroyImageView(_vkdevice, iv, nullptr);
+	}
+
+	// clean up swapchain
+	vkDestroySwapchainKHR(_vkdevice, _vkschain, nullptr);
+}
+
 void VKApplication::_drawframe()
 {
 	vkWaitForFences(_vkdevice, 1, &_vkfences_inflight[_cur_frame_idx], VK_TRUE, UINT64_MAX);
-	vkResetFences(_vkdevice, 1, &_vkfences_inflight[_cur_frame_idx]);
 
 	uint32_t img_idx;
-	vkAcquireNextImageKHR(
+	VkResult vkres =  vkAcquireNextImageKHR(
 		_vkdevice,
 		_vkschain,
 		UINT64_MAX,
 		_vksp_imgavaliable[_cur_frame_idx],
 		VK_NULL_HANDLE,
 		&img_idx);
+
+	if (vkres == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		_recreate_swapchain_related();
+		return;
+	}
+	else if (vkres != VK_SUCCESS && vkres != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
 
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -790,6 +846,8 @@ void VKApplication::_drawframe()
 	VkSemaphore signal_semaphores[] = { _vksp_rdrfinished[_cur_frame_idx] };
 	submit_info.signalSemaphoreCount = 1;
 	submit_info.pSignalSemaphores = signal_semaphores;
+
+	vkResetFences(_vkdevice, 1, &_vkfences_inflight[_cur_frame_idx]);
 
 	if (vkQueueSubmit(_vkgque, 1, &submit_info, _vkfences_inflight[_cur_frame_idx]) != VK_SUCCESS)
 	{
@@ -808,7 +866,18 @@ void VKApplication::_drawframe()
 
 	present_info.pImageIndices = &img_idx;
 
-	vkQueuePresentKHR(_vkpque, &present_info);
+	vkres = vkQueuePresentKHR(_vkpque, &present_info);
+
+	if (vkres == VK_ERROR_OUT_OF_DATE_KHR || VK_SUBOPTIMAL_KHR || _swapchain_recreated)
+	{
+		_recreate_swapchain_related();
+		_swapchain_recreated = false;
+		return;
+	}
+	else if (vkres != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
 
 	_cur_frame_idx = (_cur_frame_idx + 1) % _max_frames_in_flight;
 }

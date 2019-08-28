@@ -74,6 +74,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
+	case WM_SIZE:
+		if (vkapp)
+			vkapp->on_view_resized();
+		break;
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
