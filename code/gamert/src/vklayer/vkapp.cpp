@@ -252,7 +252,7 @@ VkPresentModeKHR VKApplication::s_choose_swap_present_mode(
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities)
+VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, void* hwnd)
 {
 	if (capabilities.currentExtent.width != UINT32_MAX)
 	{
@@ -265,7 +265,7 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 
 #if defined(WIN32)
 		::RECT client_rect;
-		if (::GetClientRect(_hwnd, &client_rect))
+		if (::GetClientRect((HWND)hwnd, &client_rect))
 		{
 			width = client_rect.right - client_rect.left;
 			height = client_rect.bottom - client_rect.top;
@@ -278,7 +278,7 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 	Compile error !
 		TODO: Support getting view size !
 #endif
-		VkExtent2D actual_extent = { width, height };
+		VkExtent2D actual_extent = { (uint32_t)width, (uint32_t)height };
 
 		actual_extent.width = max(
 			capabilities.minImageExtent.width,
@@ -289,6 +289,22 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 
 		return actual_extent;
 	}
+}
+
+VkShaderModule VKApplication::s_create_shader_module(VkDevice device, const char* code)
+{
+	VkShaderModuleCreateInfo create_info = {};
+	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	create_info.codeSize = strlen(code);
+	create_info.pCode = reinterpret_cast<const uint32_t*>(code);
+
+	VkShaderModule shader_module;
+	if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create shader module!");
+	}
+
+	return shader_module;
 }
 
 
@@ -313,6 +329,8 @@ VKApplication::VKApplication(HWND hwnd) noexcept
 	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
 	, _vkscext{ 0 }
 	, _vkrdrpass(VK_NULL_HANDLE)
+	, _vkgpllayout(VK_NULL_HANDLE)
+	, _vkgpline(VK_NULL_HANDLE)
 	, _vkcmdpool(VK_NULL_HANDLE)
 {}
 #else
@@ -332,6 +350,8 @@ VKApplication::VKApplication() noexcept
 	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
 	, _vkscext{ 0 }
 	, _vkrdrpass(VK_NULL_HANDLE)
+	, _vkgpllayout(VK_NULL_HANDLE)
+	, _vkgpline(VK_NULL_HANDLE)
 	, _vkcmdpool(VK_NULL_HANDLE)
 {}
 #endif
@@ -346,6 +366,7 @@ void VKApplication::init()
 	_create_swapchain();
 	_create_image_views();
 	_create_render_pass();
+	_create_graphics_pipeline();
 	_create_frame_buffers();
 	_create_cmd_pool();
 	_create_cmd_buffers();
@@ -544,7 +565,7 @@ void VKApplication::_create_swapchain()
 
 	VkSurfaceFormatKHR surface_format = s_choose_swapsurface_format(swapchain_support.formats);
 	VkPresentModeKHR present_mode = s_choose_swap_present_mode(swapchain_support.presentModes);
-	VkExtent2D extent = s_choose_swap_extent(swapchain_support.capabilities);
+	VkExtent2D extent = s_choose_swap_extent(swapchain_support.capabilities, _hwnd);
 
 	uint32_t image_count = swapchain_support.capabilities.minImageCount + 1;
 	if (swapchain_support.capabilities.maxImageCount > 0 &&
@@ -654,6 +675,121 @@ void VKApplication::_create_render_pass()
 	{
 		throw std::runtime_error("failed to create render pass!");
 	}
+}
+
+void VKApplication::_create_graphics_pipeline()
+{
+	auto vscode = "";
+	auto fscode = "";
+
+	VkShaderModule vs_module = s_create_shader_module(_vkdevice, vscode);
+	VkShaderModule fs_module = s_create_shader_module(_vkdevice, fscode);
+
+	VkPipelineShaderStageCreateInfo vs_stage_info = {};
+	vs_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vs_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vs_stage_info.module = vs_module;
+	vs_stage_info.pName = "main";
+
+	VkPipelineShaderStageCreateInfo fs_stage_info = {};
+	fs_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fs_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fs_stage_info.module = fs_module;
+	fs_stage_info.pName = "main";
+
+	VkPipelineShaderStageCreateInfo shader_stage_infos[] = { vs_stage_info, fs_stage_info };
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
+	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_info.vertexBindingDescriptionCount = 0;
+	vertex_input_info.vertexAttributeDescriptionCount = 0;
+
+	VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {};
+	input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	input_assembly_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	input_assembly_info.primitiveRestartEnable = VK_FALSE;
+
+	VkViewport viewport = {};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)_vkscext.width;
+	viewport.height = (float)_vkscext.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor = {};
+	scissor.offset = { 0, 0 };
+	scissor.extent = _vkscext;
+
+	VkPipelineViewportStateCreateInfo viewport_state_info = {};
+	viewport_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewport_state_info.viewportCount = 1;
+	viewport_state_info.pViewports = &viewport;
+	viewport_state_info.scissorCount = 1;
+	viewport_state_info.pScissors = &scissor;
+
+	VkPipelineRasterizationStateCreateInfo rasterizer_info = {};
+	rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer_info.depthClampEnable = VK_FALSE;
+	rasterizer_info.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer_info.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer_info.lineWidth = 1.0f;
+	rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer_info.depthBiasEnable = VK_FALSE;
+
+	VkPipelineMultisampleStateCreateInfo multisampling_info = {};
+	multisampling_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling_info.sampleShadingEnable = VK_FALSE;
+	multisampling_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	VkPipelineColorBlendAttachmentState color_blend_attachment = {};
+	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	color_blend_attachment.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo color_blending_info = {};
+	color_blending_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	color_blending_info.logicOpEnable = VK_FALSE;
+	color_blending_info.logicOp = VK_LOGIC_OP_COPY;
+	color_blending_info.attachmentCount = 1;
+	color_blending_info.pAttachments = &color_blend_attachment;
+	color_blending_info.blendConstants[0] = 0.0f;
+	color_blending_info.blendConstants[1] = 0.0f;
+	color_blending_info.blendConstants[2] = 0.0f;
+	color_blending_info.blendConstants[3] = 0.0f;
+
+	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
+	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeline_layout_info.setLayoutCount = 0;
+	pipeline_layout_info.pushConstantRangeCount = 0;
+
+	if (vkCreatePipelineLayout(_vkdevice, &pipeline_layout_info, nullptr, &_vkgpllayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	VkGraphicsPipelineCreateInfo pipeline_info = {};
+	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipeline_info.stageCount = 2;
+	pipeline_info.pStages = shader_stage_infos;
+	pipeline_info.pVertexInputState = &vertex_input_info;
+	pipeline_info.pInputAssemblyState = &input_assembly_info;
+	pipeline_info.pViewportState = &viewport_state_info;
+	pipeline_info.pRasterizationState = &rasterizer_info;
+	pipeline_info.pMultisampleState = &multisampling_info;
+	pipeline_info.pColorBlendState = &color_blending_info;
+	pipeline_info.layout = _vkgpllayout;
+	pipeline_info.renderPass = _vkrdrpass;
+	pipeline_info.subpass = 0;
+	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+
+	if (vkCreateGraphicsPipelines(_vkdevice, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &_vkgpline) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	vkDestroyShaderModule(_vkdevice, fs_module, nullptr);
+	vkDestroyShaderModule(_vkdevice, vs_module, nullptr);
 }
 
 void VKApplication::_create_frame_buffers()
@@ -782,6 +918,7 @@ void VKApplication::_recreate_swapchain_related()
 	_create_swapchain();
 	_create_image_views();
 	_create_render_pass();
+	_create_graphics_pipeline();
 	_create_frame_buffers();
 	_create_cmd_buffers();
 }
@@ -868,7 +1005,9 @@ void VKApplication::_drawframe()
 
 	vkres = vkQueuePresentKHR(_vkpque, &present_info);
 
-	if (vkres == VK_ERROR_OUT_OF_DATE_KHR || VK_SUBOPTIMAL_KHR || _swapchain_recreated)
+	if (vkres == VK_ERROR_OUT_OF_DATE_KHR || 
+		vkres == VK_SUBOPTIMAL_KHR ||
+		_swapchain_recreated)
 	{
 		_recreate_swapchain_related();
 		_swapchain_recreated = false;
@@ -890,8 +1029,15 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL __debug_callback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 	VkDebugUtilsMessageTypeFlagsEXT message_type,
 	const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-	void* usr_data) {
-	std::cerr << "vk validation layer: " << callback_data->pMessage << std::endl;
+	void* usr_data)
+{
+	std::ostringstream oss;
+	oss << ">>>>>> vk validation layer <<<<<<<\n\t" << callback_data->pMessage << std::endl;
+
+#if defined(_WIN32) || defined(WIN32)
+	OutputDebugStringA(oss.str().c_str());
+#endif // _WIN32 
+
 
 	return VK_FALSE;
 }

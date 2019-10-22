@@ -10,6 +10,9 @@ message("Vulkan found? " ${VULKAN_FOUND})
 message("Vulkan libraries: " ${Vulkan_LIBRARIES})
 message("Vulkan include: " ${Vulkan_INCLUDE_DIRS})
 
+#Define macros
+add_definitions(-DTEST_RESOURCES_ROOT="../../../test-env/gamert-dev-root")
+
 #Add inc and src files
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	include_directories(inc/win)
@@ -40,6 +43,10 @@ FILE(GLOB_RECURSE GAMERT_LOGIC_INC_FILES "inc/logic/*.hpp")
 include_directories(inc/logic)
 aux_source_directory(src/logic GAMERT_LOGIC_SRC_FILES)
 
+FILE(GLOB_RECURSE GAMERT_FILESYS_INC_FILES "inc/fs/*.hpp")
+include_directories(inc/fs)
+aux_source_directory(src/fs GAMERT_FILESYS_SRC_FILES)
+
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	message("[gamert] Add executable and link libs -------------------------------")
 	add_executable( gamert WIN32
@@ -47,12 +54,14 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		"inc/pre-req.hpp"
 		${GAMERT_VKLAYER_INC_FILES}
 		${GAMERT_GRAPHICS_INC_FILES}
+		${GAMERT_FILESYS_INC_FILES}
 		${GAMERT_LOGIC_INC_FILES}
 		${GAMERT_OS_RELATED_INC_FILES}
 		#Source files:
 		${GAMERT_VKLAYER_SRC_FILES}
 		${GAMERT_GRAPHICS_SRC_FILES}
 		${GAMERT_LOGIC_SRC_FILES}
+		${GAMERT_FILESYS_SRC_FILES}
 		${GAMERT_OS_RELATED_SRC_FILES} )
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 else()

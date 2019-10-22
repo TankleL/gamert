@@ -1,17 +1,7 @@
 #pragma once
 
-#if defined(WIN32)
-#	include <Windows.h>
-#	define VK_USE_PLATFORM_WIN32_KHR
-#endif
-
+#include "pre-req.hpp"
 #include <vulkan/vulkan.hpp>
-#include <stdexcept>
-#include <vector>
-#include <iostream>
-#include <cstdint>
-#include <set>
-#include <algorithm>
 
 class VKApplication
 {
@@ -39,7 +29,7 @@ private:
 	void _create_swapchain();
 	void _create_image_views();
 	void _create_render_pass();
-	// TODO: create graphics pipleline
+	void _create_graphics_pipeline();
 	void _create_frame_buffers();
 	void _create_cmd_pool();
 	void _create_cmd_buffers();
@@ -98,11 +88,13 @@ private:
 
 	static swapchain_support_details_t s_query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-	VkSurfaceFormatKHR s_choose_swapsurface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
+	static VkSurfaceFormatKHR s_choose_swapsurface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
 
-	VkPresentModeKHR s_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
+	static VkPresentModeKHR s_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
 
-	VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
+	static VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, void* hwnd);
+
+	static VkShaderModule s_create_shader_module(VkDevice device, const char* code);
 
 private:
 	uint32_t						_max_frames_in_flight;
@@ -122,13 +114,16 @@ private:
 	VkExtent2D						_vkscext;		// vulkan swapchain extent 2D
 	std::vector<VkImageView>		_vkscimgviews;	// vulkan swapchain image views
 	VkRenderPass					_vkrdrpass;		// vulkan render pass
-	// TODO: graphics pipeline
+
+	VkPipelineLayout				_vkgpllayout;	// vulkan graphics pipeline layout
+	VkPipeline						_vkgpline;		// vulkan graphics pipeline
+	
 	std::vector<VkFramebuffer>		_vksc_framebuffers;	// vulkan swapchain framebuffers
 	VkCommandPool					_vkcmdpool;
 	std::vector<VkCommandBuffer>	_vkcmdbuffers;
 	std::vector<VkSemaphore>		_vksp_imgavaliable;	// vulkan semaphores - image avaliable
 	std::vector<VkSemaphore>		_vksp_rdrfinished;	// vulkan semaphores - rendering finished
-	std::vector<VkFence>			_vkfences_inflight;		// vulkan in-flight fences
+	std::vector<VkFence>			_vkfences_inflight;	// vulkan in-flight fences
 		
 #if defined(WIN32)
 private:
