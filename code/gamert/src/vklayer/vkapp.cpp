@@ -1,6 +1,7 @@
 #include "vkapp.hpp"
 #include "logicmgr.hpp"
 #include "rendermgr.hpp"
+#include "resourcesmgr.hpp"
 
 /* ****************************************************************************
 |                        [Region] Forward Declaration                         |
@@ -291,12 +292,12 @@ VkExtent2D VKApplication::s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& c
 	}
 }
 
-VkShaderModule VKApplication::s_create_shader_module(VkDevice device, const char* code)
+VkShaderModule VKApplication::s_create_shader_module(VkDevice device, const std::vector<std::uint8_t>& code)
 {
 	VkShaderModuleCreateInfo create_info = {};
 	create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	create_info.codeSize = strlen(code);
-	create_info.pCode = reinterpret_cast<const uint32_t*>(code);
+	create_info.codeSize = code.size();
+	create_info.pCode = reinterpret_cast<const uint32_t*>(&code[0]);
 
 	VkShaderModule shader_module;
 	if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
@@ -679,8 +680,12 @@ void VKApplication::_create_render_pass()
 
 void VKApplication::_create_graphics_pipeline()
 {
-	auto vscode = "";
-	auto fscode = "";
+	std::vector<std::uint8_t> vscode;
+	std::vector<std::uint8_t> fscode;
+
+	ResourcesMgr& resmgr = ResourcesMgr::get_instance();
+	resmgr.read_binary_file(vscode, "shaders/demo.vert.spv");
+	resmgr.read_binary_file(fscode, "shaders/demo.frag.spv");
 
 	VkShaderModule vs_module = s_create_shader_module(_vkdevice, vscode);
 	VkShaderModule fs_module = s_create_shader_module(_vkdevice, fscode);

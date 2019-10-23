@@ -94,7 +94,7 @@ private:
 
 	static VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, void* hwnd);
 
-	static VkShaderModule s_create_shader_module(VkDevice device, const char* code);
+	static VkShaderModule s_create_shader_module(VkDevice device, const std::vector<std::uint8_t>& code);
 
 private:
 	uint32_t						_max_frames_in_flight;
