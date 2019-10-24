@@ -876,9 +876,9 @@ void VKApplication::_create_cmd_buffers()
 
 		vkCmdBeginRenderPass(_vkcmdbuffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		//vkCmdBindPipeline(_vkcmdbuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+		vkCmdBindPipeline(_vkcmdbuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _vkgpline);
 
-		//vkCmdDraw(_vkcmdbuffers[i], 3, 1, 0, 0);
+		vkCmdDraw(_vkcmdbuffers[i], 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(_vkcmdbuffers[i]);
 
