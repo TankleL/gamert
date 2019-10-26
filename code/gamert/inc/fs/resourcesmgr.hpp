@@ -10,7 +10,7 @@ public:
 public:
 	void set_resources_root_path(const std::string& path);
 
-	bool read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const;
+	void read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const;
 
 private:
 	ResourcesMgr();

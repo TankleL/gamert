@@ -16,7 +16,7 @@ void ResourcesMgr::set_resources_root_path(const std::string& path)
 	_res_root = path;
 }
 
-bool ResourcesMgr::read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const
+void ResourcesMgr::read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const
 {
-	return fileop::read_binary_file(dest, _res_root + "/" + respath);
+	fileop::read_binary_file(dest, _res_root + "/" + respath);
 }

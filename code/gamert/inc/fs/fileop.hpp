@@ -5,7 +5,7 @@
 
 namespace fileop
 {
-	bool read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath);
+	void read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath);
 }
 
 

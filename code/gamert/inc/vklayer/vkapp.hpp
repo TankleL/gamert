@@ -41,61 +41,8 @@ private:
 	void _drawframe();
 
 private:
-	typedef struct QueueFamilyIndices {
-		QueueFamilyIndices()
-			: graphics_family(UINT32_MAX)
-			, present_family(UINT32_MAX)
-		{}
 
-		uint32_t	graphics_family;
-		uint32_t	present_family;
-
-		bool is_complete() {
-			return (graphics_family != UINT32_MAX &&
-					present_family != UINT32_MAX);
-		}
-	} queue_family_indices_t;
-
-	typedef struct SwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	} swapchain_support_details_t;
-
-private:
-	static VkResult s_create_debug_utils_messenger_ext(
-		VkInstance vkinst,
-		const VkDebugUtilsMessengerCreateInfoEXT* create_info,
-		const VkAllocationCallbacks* allocator,
-		VkDebugUtilsMessengerEXT* dbgmsgr);
-
-	static void s_destroy_debug_utils_messenger_ext(
-		VkInstance vkinst,
-		VkDebugUtilsMessengerEXT dbgmsgr,
-		const VkAllocationCallbacks* allocator);
-
-	static bool s_check_validation_layer_support();
-
-	static void s_populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& create_info);
-
-	static QueueFamilyIndices s_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-	static bool s_is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-	static uint32_t s_get_queue_family_index(VkPhysicalDevice device);
-
-	static bool s_check_device_extension_support(VkPhysicalDevice device);
-
-	static swapchain_support_details_t s_query_swapchain_support(VkPhysicalDevice device, VkSurfaceKHR surface);
-
-	static VkSurfaceFormatKHR s_choose_swapsurface_format(const std::vector<VkSurfaceFormatKHR>& available_formats);
-
-	static VkPresentModeKHR s_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& available_present_modes);
-
-	static VkExtent2D s_choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities, void* hwnd);
-
-	static VkShaderModule s_create_shader_module(VkDevice device, const std::vector<std::uint8_t>& code);
-
+	
 private:
 	uint32_t						_max_frames_in_flight;
 	size_t							_cur_frame_idx;
@@ -129,12 +76,6 @@ private:
 private:
 	HWND		_hwnd;
 #endif
-
-private:
-	static std::vector<const char*>	s_enabled_instance_extension;
-	static std::vector<const char*>	s_enabled_device_extension;
-	static bool						s_enabled_validation_layer;
-	static std::vector<const char*> s_validation_layers;
 };
 
 

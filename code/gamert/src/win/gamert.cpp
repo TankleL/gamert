@@ -1,5 +1,8 @@
 #include "osenv.hpp"
 #include "vkapp.hpp"
+#include "vvector.hpp"
+
+#include <tuple>
 
 VKApplication* vkapp = nullptr;
 

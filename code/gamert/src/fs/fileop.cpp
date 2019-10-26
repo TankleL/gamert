@@ -3,7 +3,7 @@
 using namespace std;
 using namespace fileop;
 
-bool fileop::read_binary_file(std::vector<std::uint8_t>& dest, const std::string& path)
+void fileop::read_binary_file(std::vector<std::uint8_t>& dest, const std::string& path)
 {
 	try
 	{
