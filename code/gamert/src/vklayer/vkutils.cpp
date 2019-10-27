@@ -337,45 +337,42 @@ uint32_t VkUtils::find_memory_type(
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void VkUtils::create_vertex_buffer(
-	VkBuffer& vertex_buffer,
-	VkPhysicalDevice phy_device,
-	VkDeviceMemory& buffer_mem,
+void VkUtils::create_buffer(
+	VkBuffer& buffer,
+	VkDeviceMemory& buffer_memory,
 	VkDevice device,
-	void* data,
-	size_t length)
+	VkPhysicalDevice physical_device,
+	VkDeviceSize size,
+	VkBufferUsageFlags usage,
+	VkMemoryPropertyFlags properties
+)
 {
 	VkBufferCreateInfo buffer_info = {};
 	buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	buffer_info.size = length;
-	buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	buffer_info.size = size;
+	buffer_info.usage = usage;
 	buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	if (vkCreateBuffer(device, &buffer_info, nullptr, &vertex_buffer) != VK_SUCCESS)
+	if (vkCreateBuffer(device, &buffer_info, nullptr, &buffer) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create vertex buffer");
 	}
 
 	VkMemoryRequirements mem_req;
-	vkGetBufferMemoryRequirements(device, vertex_buffer, &mem_req);
+	vkGetBufferMemoryRequirements(device, buffer, &mem_req);
 
 	VkMemoryAllocateInfo alloc_info = {};
 	alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	alloc_info.allocationSize = mem_req.size;
 	alloc_info.memoryTypeIndex = find_memory_type(
-		phy_device,
+		physical_device,
 		mem_req.memoryTypeBits,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		properties);
 
-	if (vkAllocateMemory(device, &alloc_info, nullptr, &buffer_mem) != VK_SUCCESS)
+	if (vkAllocateMemory(device, &alloc_info, nullptr, &buffer_memory) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to allocate vertex buffer memory!");
 	}
 
-	vkBindBufferMemory(device, vertex_buffer, buffer_mem, 0);
-
-	void* dest = nullptr;
-	vkMapMemory(device, buffer_mem, 0, buffer_info.size, 0, &dest);
-	memcpy(dest, data, buffer_info.size);
-	vkUnmapMemory(device, buffer_mem);
+	vkBindBufferMemory(device, buffer, buffer_memory, 0);
 }

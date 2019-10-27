@@ -29,7 +29,6 @@ private:
 	void _create_swapchain();
 	void _create_image_views();
 	void _create_render_pass();
-	void _create_graphics_pipeline();
 	void _create_frame_buffers();
 	void _create_cmd_pool();
 	void _create_cmd_buffers();
@@ -61,9 +60,6 @@ private:
 	VkExtent2D						_vkscext;		// vulkan swapchain extent 2D
 	std::vector<VkImageView>		_vkscimgviews;	// vulkan swapchain image views
 	VkRenderPass					_vkrdrpass;		// vulkan render pass
-
-	VkPipelineLayout				_vkgpllayout;	// vulkan graphics pipeline layout
-	VkPipeline						_vkgpline;		// vulkan graphics pipeline
 	
 	std::vector<VkFramebuffer>		_vksc_framebuffers;	// vulkan swapchain framebuffers
 	VkCommandPool					_vkcmdpool;

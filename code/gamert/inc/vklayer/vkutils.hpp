@@ -82,13 +82,17 @@ public:
 		uint32_t type_filter,
 		VkMemoryPropertyFlags prop_flag);
 
-	static void create_vertex_buffer(
-		VkBuffer& vertex_buffer,
-		VkPhysicalDevice phy_device,
-		VkDeviceMemory& buffer_mem,
+	static void create_buffer(
+		VkBuffer& buffer,
+		VkDeviceMemory& buffer_memory,
 		VkDevice device,
-		void* data,
-		size_t length);
+		VkPhysicalDevice physical_device,
+		VkDeviceSize size,
+		VkBufferUsageFlags usage,
+		VkMemoryPropertyFlags properties
+	);
+
+	static void create_pipeline();
 
 public:
 	static std::vector<const char*>	enabled_instance_extension;

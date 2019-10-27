@@ -9,27 +9,10 @@
 VKApplication::VKApplication(HWND hwnd) noexcept
 	: _hwnd(hwnd)
 	, _max_frames_in_flight(2)
-	, _cur_frame_idx(0)
-	, _swapchain_recreated(false)
-	, _vkinst(VK_NULL_HANDLE)
-	, _vkdbgmsgr(VK_NULL_HANDLE)
-	, _vkphydev(VK_NULL_HANDLE)
-	, _vkdevice(VK_NULL_HANDLE)
-	, _vkgque(VK_NULL_HANDLE)
-	, _vkpque(VK_NULL_HANDLE)
-	, _vksrf(VK_NULL_HANDLE)
-	, _vkschain(VK_NULL_HANDLE)
-	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
-	, _vkscext{ 0 }
-	, _vkrdrpass(VK_NULL_HANDLE)
-	, _vkgpllayout(VK_NULL_HANDLE)
-	, _vkgpline(VK_NULL_HANDLE)
-	, _vkcmdpool(VK_NULL_HANDLE)
-{}
 #else
 VKApplication::VKApplication() noexcept
-	: _hwnd(hwnd)
-	, _max_frames_in_flight(2)
+	: _max_frames_in_flight(2)
+#endif
 	, _cur_frame_idx(0)
 	, _swapchain_recreated(false)
 	, _vkinst(VK_NULL_HANDLE)
@@ -43,23 +26,32 @@ VKApplication::VKApplication() noexcept
 	, _vkscimgfmt(VK_FORMAT_UNDEFINED)
 	, _vkscext{ 0 }
 	, _vkrdrpass(VK_NULL_HANDLE)
-	, _vkgpllayout(VK_NULL_HANDLE)
-	, _vkgpline(VK_NULL_HANDLE)
 	, _vkcmdpool(VK_NULL_HANDLE)
 {}
-#endif
 
 void VKApplication::init()
 {
+	RenderMgr& rmgr = RenderMgr::get_instance();
+
 	_create_instance();
 	_setup_debug();
 	_create_surface();
 	_pick_physical_device();
 	_create_logic_device();
+
+	rmgr.set_vulkan_device(_vkdevice);
+	rmgr.set_vulkan_physical_device(_vkphydev);
+
 	_create_swapchain();
+
+	rmgr.set_vulkan_swapchain_extent(_vkscext);
+
 	_create_image_views();
 	_create_render_pass();
-	_create_graphics_pipeline();
+
+	rmgr.set_vulkan_renderpass(_vkrdrpass);
+	rmgr.create_pipelines();
+	
 	_create_frame_buffers();
 	_create_cmd_pool();
 	_create_cmd_buffers();
@@ -371,125 +363,6 @@ void VKApplication::_create_render_pass()
 	}
 }
 
-void VKApplication::_create_graphics_pipeline()
-{
-	std::vector<std::uint8_t> vscode;
-	std::vector<std::uint8_t> fscode;
-
-	ResourcesMgr& resmgr = ResourcesMgr::get_instance();
-	resmgr.read_binary_file(vscode, "shaders/demo.vert.spv");
-	resmgr.read_binary_file(fscode, "shaders/demo.frag.spv");
-
-	VkShaderModule vs_module = VkUtils::create_shader_module(_vkdevice, vscode);
-	VkShaderModule fs_module = VkUtils::create_shader_module(_vkdevice, fscode);
-
-	VkPipelineShaderStageCreateInfo vs_stage_info = {};
-	vs_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vs_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vs_stage_info.module = vs_module;
-	vs_stage_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo fs_stage_info = {};
-	fs_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fs_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fs_stage_info.module = fs_module;
-	fs_stage_info.pName = "main";
-
-	VkPipelineShaderStageCreateInfo shader_stage_infos[] = { vs_stage_info, fs_stage_info };
-
-	VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
-	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = 0;
-	vertex_input_info.vertexAttributeDescriptionCount = 0;
-
-	VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {};
-	input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	input_assembly_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	input_assembly_info.primitiveRestartEnable = VK_FALSE;
-
-	VkViewport viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = (float)_vkscext.width;
-	viewport.height = (float)_vkscext.height;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-
-	VkRect2D scissor = {};
-	scissor.offset = { 0, 0 };
-	scissor.extent = _vkscext;
-
-	VkPipelineViewportStateCreateInfo viewport_state_info = {};
-	viewport_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewport_state_info.viewportCount = 1;
-	viewport_state_info.pViewports = &viewport;
-	viewport_state_info.scissorCount = 1;
-	viewport_state_info.pScissors = &scissor;
-
-	VkPipelineRasterizationStateCreateInfo rasterizer_info = {};
-	rasterizer_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizer_info.depthClampEnable = VK_FALSE;
-	rasterizer_info.rasterizerDiscardEnable = VK_FALSE;
-	rasterizer_info.polygonMode = VK_POLYGON_MODE_FILL;
-	rasterizer_info.lineWidth = 1.0f;
-	rasterizer_info.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	rasterizer_info.depthBiasEnable = VK_FALSE;
-
-	VkPipelineMultisampleStateCreateInfo multisampling_info = {};
-	multisampling_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisampling_info.sampleShadingEnable = VK_FALSE;
-	multisampling_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-	VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-	color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	color_blend_attachment.blendEnable = VK_FALSE;
-
-	VkPipelineColorBlendStateCreateInfo color_blending_info = {};
-	color_blending_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending_info.logicOpEnable = VK_FALSE;
-	color_blending_info.logicOp = VK_LOGIC_OP_COPY;
-	color_blending_info.attachmentCount = 1;
-	color_blending_info.pAttachments = &color_blend_attachment;
-	color_blending_info.blendConstants[0] = 0.0f;
-	color_blending_info.blendConstants[1] = 0.0f;
-	color_blending_info.blendConstants[2] = 0.0f;
-	color_blending_info.blendConstants[3] = 0.0f;
-
-	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
-	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 0;
-	pipeline_layout_info.pushConstantRangeCount = 0;
-
-	if (vkCreatePipelineLayout(_vkdevice, &pipeline_layout_info, nullptr, &_vkgpllayout) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
-
-	VkGraphicsPipelineCreateInfo pipeline_info = {};
-	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipeline_info.stageCount = 2;
-	pipeline_info.pStages = shader_stage_infos;
-	pipeline_info.pVertexInputState = &vertex_input_info;
-	pipeline_info.pInputAssemblyState = &input_assembly_info;
-	pipeline_info.pViewportState = &viewport_state_info;
-	pipeline_info.pRasterizationState = &rasterizer_info;
-	pipeline_info.pMultisampleState = &multisampling_info;
-	pipeline_info.pColorBlendState = &color_blending_info;
-	pipeline_info.layout = _vkgpllayout;
-	pipeline_info.renderPass = _vkrdrpass;
-	pipeline_info.subpass = 0;
-	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-
-	if (vkCreateGraphicsPipelines(_vkdevice, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &_vkgpline) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
-
-	vkDestroyShaderModule(_vkdevice, fs_module, nullptr);
-	vkDestroyShaderModule(_vkdevice, vs_module, nullptr);
-}
-
 void VKApplication::_create_frame_buffers()
 {
 	_vksc_framebuffers.resize(_vkscimgviews.size());
@@ -569,7 +442,10 @@ void VKApplication::_create_cmd_buffers()
 
 		vkCmdBeginRenderPass(_vkcmdbuffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(_vkcmdbuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _vkgpline);
+		vkCmdBindPipeline(
+			_vkcmdbuffers[i],
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			RenderMgr::get_instance().get_vulkan_pipeline(RenderMgr::BTPL_2D_Position_RGBColor));
 
 		vkCmdDraw(_vkcmdbuffers[i], 3, 1, 0, 0);
 
@@ -611,12 +487,21 @@ void VKApplication::_recreate_swapchain_related()
 {
 	vkDeviceWaitIdle(_vkdevice);
 
+	// destroy out-of-date components
 	_clean_up_swapchain();
 
+	// create new graphics componentes
+	RenderMgr& rmgr = RenderMgr::get_instance();
+	
 	_create_swapchain();
+	rmgr.set_vulkan_swapchain_extent(_vkscext);
+
 	_create_image_views();
 	_create_render_pass();
-	_create_graphics_pipeline();
+	
+	rmgr.set_vulkan_renderpass(_vkrdrpass);
+	rmgr.create_pipelines();
+
 	_create_frame_buffers();
 	_create_cmd_buffers();
 }
@@ -624,6 +509,9 @@ void VKApplication::_recreate_swapchain_related()
 
 void VKApplication::_clean_up_swapchain()
 {
+	// clean up graphics pipelines
+	RenderMgr::get_instance().destroy_pipelines();
+
 	// clean up frame buffers
 	for (const auto& fb : _vksc_framebuffers)
 	{

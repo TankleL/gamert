@@ -12,20 +12,20 @@ public:
 };
 
 /**
-*	@class VertexPC
-*	@brief Position & Color Vertex
+*	@class VVertex2DRGB
+*	@brief 2D Position & RGB Color Vertex
 */
-class VVertexPC
+class VVertex2DRGB
 {
 public:
 	VFVec2	pos;
 	VFVec3	color;
 };
 
-class VVertexPCDescriptor : public IVVertexDescriptor
+class VVertex2DRGBDescriptor : public IVVertexDescriptor
 {
 public:
-	VVertexPCDescriptor();
+	VVertex2DRGBDescriptor();
 
 public:
 	virtual const VkVertexInputBindingDescription& binding_description() const override;
