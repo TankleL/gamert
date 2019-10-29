@@ -1,14 +1,11 @@
 #pragma once
 
 #include "pre-req.hpp"
+#include "singleton.hpp"
 
-class LogicMgr
+class LogicMgr : public Singleton<LogicMgr>
 {
-private:
-	LogicMgr();
-
-public:
-	static LogicMgr& get_instance();
+	DECL_SINGLETON_CTOR(LogicMgr);
 
 public:
 	void update_frame();

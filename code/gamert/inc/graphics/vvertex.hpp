@@ -3,6 +3,7 @@
 #include "pre-req.hpp"
 #include "vvector.hpp"
 #include "vulkan/vulkan.hpp"
+#include "singleton.hpp"
 
 class IVVertexDescriptor
 {
@@ -22,10 +23,11 @@ public:
 	VFVec3	color;
 };
 
-class VVertex2DRGBDescriptor : public IVVertexDescriptor
+class VVertex2DRGBDescriptor
+	: public Singleton<VVertex2DRGBDescriptor>
+	, public IVVertexDescriptor
 {
-public:
-	VVertex2DRGBDescriptor();
+	DECL_SINGLETON_CTOR(VVertex2DRGBDescriptor);
 
 public:
 	virtual const VkVertexInputBindingDescription& binding_description() const override;

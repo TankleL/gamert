@@ -42,11 +42,13 @@ public:
 	VVector& operator=(const VVector& rhs) noexcept
 	{
 		_data = rhs._data;
+		return *this;
 	}
 
 	VVector& operator=(VVector&& rhs) noexcept
 	{
 		_data = std::move(rhs._data);
+		return *this;
 	}
 
 public:

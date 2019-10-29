@@ -20,5 +20,5 @@
 #include <cstdarg>
 #include <unordered_map>
 
-
+#define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}
 

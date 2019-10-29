@@ -1,19 +1,25 @@
 #pragma once
 
 #include "pre-req.hpp"
+#include "singleton.hpp"
 #include "vnode.hpp"
 
 #include <vulkan/vulkan.hpp>
 
-class RenderMgr
+class RenderMgr : public SingletonTemplate<RenderMgr>
 {
-private:
-	RenderMgr();
+	DECL_SINGLETON_CTOR(RenderMgr);
 
 public:
-	enum BuiltinPipelines
+	enum BuiltinPipelines : uint32_t
 	{
 		BTPL_2D_Position_RGBColor	= 0		// Posistion
+	};
+
+	enum BuiltinRenderPasses : uint32_t
+	{
+		BTRP_Default = 0,
+		BTRP_CleanUp
 	};
 
 public:
@@ -44,36 +50,45 @@ public:
 	};
 
 public:
-	static RenderMgr& get_instance();
-
-public:
 	void	set_vulkan_device(VkDevice device);
 	void	set_vulkan_physical_device(VkPhysicalDevice phydev);
-	void	set_vulkan_renderpass(VkRenderPass renderpass);
 	void	set_vulkan_swapchain_extent(VkExtent2D extent);
+	void	set_vulkan_swapchain_image_format(VkFormat fmt);
+	void	set_vulkan_command_pool(VkCommandPool pool);
 
 	VkDevice			get_vulkan_device() const;
 	VkPhysicalDevice	get_vulkan_physical_device() const;
+	VkCommandPool		get_vulkan_command_pool() const;
+	VkExtent2D			get_vulkan_swapchain_extent() const;
+	VkPipeline			get_vulkan_pipeline(BuiltinPipelines id);
+	std::vector<VkCommandBuffer>& get_vulkan_commands();
+	void				clear_vulkan_commands();
 
 public:
-	void		render_frame();
+	void		render_frame(VkFramebuffer frmbuffer);
+	void		create_renderpasses();
 	void		create_pipelines();
 	void		destroy_pipelines();
-	VkPipeline	get_vulkan_pipeline(BuiltinPipelines id);
+	void		destroy_renderpasses();
+	VNode*		switch_vtree(VNode* tree);
 
 private:
+	void	_create_builtin_renderpass();
 	void	_create_builtin_pipelines();
 
 private:
 	static VNode _dummy_vtree;
 
 private:
-	std::unordered_map<uint32_t, Pipeline>	_pipelines;
+	std::unordered_map<uint32_t, Pipeline>		_pipelines;
+	std::unordered_map<uint32_t, VkRenderPass>	_renderpasses;
+	std::vector<VkCommandBuffer>				_cmdqueue;
+	VNode* _vtree;
 
 private:
-	VNode*				_vtree;
 	VkDevice			_vkdevice;
 	VkPhysicalDevice	_vkphydev;
-	VkRenderPass		_vkrdrpass;
+	VkFormat			_vkscimgfmt;
 	VkExtent2D			_vkscext;
+	VkCommandPool		_vkcmdpool;
 };

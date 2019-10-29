@@ -1,12 +1,17 @@
 #include "osenv.hpp"
+
 #include "vkapp.hpp"
-#include "vvector.hpp"
-
-#include <tuple>
-
-VKApplication* vkapp = nullptr;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+void init_gamert_app()
+{
+	VKApplication::get_instance().init(
+		"gamert",
+		"gamert engine",
+		VK_MAKE_VERSION(1, 0, 0),
+		VK_MAKE_VERSION(1, 0, 0));
+}
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
@@ -47,10 +52,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	}
 
 	ShowWindow(hwnd, nCmdShow);
-
-	// Create VKApp
-	vkapp = new VKApplication(hwnd);
-	vkapp->init();
+	
+	init_gamert_app();
 
 	// Run the message loop.
 	MSG msg = { };
@@ -63,12 +66,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else
 		{
-			vkapp->tick();
-			Sleep(16);
+			Sleep(30);
 		}
 	}
 
-	vkapp->uninit();
 
 	return 0;
 }
@@ -78,8 +79,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_SIZE:
-		if (vkapp)
-			vkapp->on_view_resized();
 		break;
 
 	case WM_DESTROY:

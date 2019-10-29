@@ -52,6 +52,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	add_executable( gamert WIN32
 		#Header files:
 		"inc/pre-req.hpp"
+		"inc/singleton.hpp"
 		${GAMERT_VKLAYER_INC_FILES}
 		${GAMERT_GRAPHICS_INC_FILES}
 		${GAMERT_FILESYS_INC_FILES}

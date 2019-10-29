@@ -48,7 +48,7 @@ VNode* VNode::detach_child(const std::string& name)
 	return result;
 }
 
-void VNode::render()
+void VNode::render(std::vector<VkCommandBuffer>& cmdqueue, VkFramebuffer frmbuffer, VkCommandPool cmdpool)
 {
 	on_prerender();
 	for (const auto& child : _children)
@@ -56,10 +56,10 @@ void VNode::render()
 		child->on_prerender();
 	}
 
-	on_render();
+	on_render(cmdqueue, frmbuffer, cmdpool);
 	for (const auto& child : _children)
 	{
-		child->on_render();
+		child->on_render(cmdqueue, frmbuffer, cmdpool);
 	}
 
 	on_postrender();
