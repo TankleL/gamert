@@ -37,6 +37,7 @@ public:
 	GRT_VULKAN_FACTOR_GETTER(const std::vector<VkFence>&, fences_inflight, _fn_inflight);
 	GRT_VULKAN_FACTOR_GETTER(int, max_frames_in_flight, _max_frames_in_flight);
 	GRT_VULKAN_FACTOR_GETTER(int, current_frame_index, _cur_frame);
+	GRT_VULKAN_FACTOR_GETTER(VkCommandPool, command_pool, _vkcmdpool);
 
 public:
 	inline void next_frame_index() { _cur_frame = (_cur_frame + 1) % _max_frames_in_flight; }
@@ -45,9 +46,10 @@ private:
 	std::vector<VkSemaphore>	_sp_imgavaliable;	// vulkan semaphores - image avaliable
 	std::vector<VkSemaphore>	_sp_rdrfinished;	// vulkan semaphores - rendering finished
 	std::vector<VkFence>		_fn_inflight;		// vulkan in-flight fences
-	VkSurfaceKHR				_vksrf;			// vulkan surface
-	VkInstance					_vkinstance;	// vulkan instance
-	VkDebugUtilsMessengerEXT	_vkdbgmsgr;		// vulkan debug messenger
+	VkSurfaceKHR				_vksrf;				// vulkan surface
+	VkInstance					_vkinstance;		// vulkan instance
+	VkDebugUtilsMessengerEXT	_vkdbgmsgr;			// vulkan debug messenger
+	VkCommandPool				_vkcmdpool;
 
 private:
 	std::vector<VKRenderer*>	_renderers;

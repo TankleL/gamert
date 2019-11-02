@@ -65,4 +65,5 @@ void VKDevice::uninit()
 {
 	// clean up vk device
 	vkDestroyDevice(_device, nullptr);
+	_device = VK_NULL_HANDLE;
 }

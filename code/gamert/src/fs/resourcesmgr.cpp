@@ -1,12 +1,6 @@
 #include "resourcesmgr.hpp"
 #include "fileop.hpp"
 
-ResourcesMgr& ResourcesMgr::get_instance()
-{
-	static ResourcesMgr inst;
-	return inst;
-}
-
 ResourcesMgr::ResourcesMgr()
 	: _res_root(TEST_RESOURCES_ROOT)
 {}

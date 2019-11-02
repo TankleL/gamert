@@ -8,6 +8,7 @@ VKContext::VKContext()
 	: _vksrf(VK_NULL_HANDLE)
 	, _vkinstance(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
+	, _vkcmdpool(VK_NULL_HANDLE)
 	, _hwnd(nullptr)
 	, _device(nullptr)
 	, _swapchain(nullptr)
@@ -122,23 +123,50 @@ void VKContext::init(
 			vkCreateFence(vkdev, &fence_info, nullptr, &_fn_inflight[i]) == VK_SUCCESS,
 			"failed to create synchronization objects for a frame.");
 	}
+
+	// create command pool
+	VKUtils::queue_family_indices_t indices =
+		VKUtils::find_queue_families(
+			physical_device,
+			_vksrf);
+
+	VkCommandPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.queueFamilyIndex = indices.graphics_family;
+	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+
+	GRT_CHECK(
+		VK_SUCCESS == vkCreateCommandPool(
+			_device->get_vulkan_device(),
+			&pool_info,
+			nullptr,
+			&_vkcmdpool),
+		"failed to create command pool.");
 }
 
 void VKContext::destroy()
 {
+	// clean up command pool
+	vkDestroyCommandPool(_device->get_vulkan_device(), _vkcmdpool, nullptr);
+	_vkcmdpool = VK_NULL_HANDLE;
+
+	// clean up device
 	_device->uninit();
 
 	// clean up surface
 	vkDestroySurfaceKHR(_vkinstance, _vksrf, nullptr);
+	_vksrf = VK_NULL_HANDLE;
 
 	// clean up vk debug utils
 	if (VKUtils::enabled_validation_layer)
 	{
 		VKUtils::destroy_debug_utils_messenger_ext(_vkinstance, _vkdbgmsgr, nullptr);
+		_vkdbgmsgr = VK_NULL_HANDLE;
 	}
 
 	// clean up vk instance
 	vkDestroyInstance(_vkinstance, nullptr);
+	_vkinstance = VK_NULL_HANDLE;
 }
 
 void VKContext::register_renderer(VKRenderer* renderer)
@@ -155,6 +183,8 @@ void VKContext::resize()
 {
 	if (_device)
 	{
+		vkDeviceWaitIdle(_device->get_vulkan_device());
+
 		bool need_cleanup = _swapchain != nullptr;
 
 		GRT_SAFE_DELETE(_swapchain);
