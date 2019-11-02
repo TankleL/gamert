@@ -1,24 +1,24 @@
-#include "vkutils.hpp"
+#include "VKUtils.hpp"
 
 
 
 #if defined(DEBUG) || defined(_DEBUG)
-bool VkUtils::enabled_validation_layer = true;
+bool VKUtils::enabled_validation_layer = true;
 #else
-bool VkUtils::enabled_validation_layer = false;
+bool VKUtils::enabled_validation_layer = false;
 #endif
 
-std::vector<const char*> VkUtils::enabled_device_extension =
+std::vector<const char*> VKUtils::enabled_device_extension =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-std::vector<const char*> VkUtils::validation_layers =
+std::vector<const char*> VKUtils::validation_layers =
 {
 	 "VK_LAYER_KHRONOS_validation"
 };
 
-std::vector<const char*> VkUtils::enabled_instance_extension =
+std::vector<const char*> VKUtils::enabled_instance_extension =
 {
 	"VK_KHR_surface"
 #if defined(WIN32)
@@ -47,7 +47,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL __debug_callback(
 	return VK_FALSE;
 }
 
-VkResult VkUtils::create_debug_utils_messenger_ext(
+VkResult VKUtils::create_debug_utils_messenger_ext(
 	VkInstance vkinst,
 	const VkDebugUtilsMessengerCreateInfoEXT* create_info,
 	const VkAllocationCallbacks* allocator,
@@ -62,7 +62,7 @@ VkResult VkUtils::create_debug_utils_messenger_ext(
 	}
 }
 
-void VkUtils::destroy_debug_utils_messenger_ext(
+void VKUtils::destroy_debug_utils_messenger_ext(
 	VkInstance vkinst,
 	VkDebugUtilsMessengerEXT dbgmsgr,
 	const VkAllocationCallbacks* allocator)
@@ -73,7 +73,7 @@ void VkUtils::destroy_debug_utils_messenger_ext(
 	}
 }
 
-bool VkUtils::check_validation_layer_support()
+bool VKUtils::check_validation_layer_support()
 {
 	uint32_t layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
@@ -99,7 +99,7 @@ bool VkUtils::check_validation_layer_support()
 	return true;
 }
 
-void VkUtils::populate_debug_messenger_create_info(
+void VKUtils::populate_debug_messenger_create_info(
 	VkDebugUtilsMessengerCreateInfoEXT& create_info)
 {
 	create_info = {};
@@ -119,14 +119,14 @@ void VkUtils::populate_debug_messenger_create_info(
 	create_info.pfnUserCallback = __debug_callback;
 }
 
-bool VkUtils::is_device_suitable(
+bool VKUtils::is_device_suitable(
 	VkPhysicalDevice device,
 	VkSurfaceKHR surface)
 {
 	return find_queue_families(device, surface).is_complete() && check_device_extension_support(device);
 }
 
-bool VkUtils::check_device_extension_support(
+bool VKUtils::check_device_extension_support(
 	VkPhysicalDevice device)
 {
 	uint32_t extension_count;
@@ -144,7 +144,7 @@ bool VkUtils::check_device_extension_support(
 	return required_extensions.empty();
 }
 
-VkUtils::QueueFamilyIndices VkUtils::find_queue_families(
+VKUtils::QueueFamilyIndices VKUtils::find_queue_families(
 	VkPhysicalDevice device,
 	VkSurfaceKHR surface)
 {
@@ -179,7 +179,7 @@ VkUtils::QueueFamilyIndices VkUtils::find_queue_families(
 	return indices;
 }
 
-uint32_t VkUtils::get_queue_family_index(
+uint32_t VKUtils::get_queue_family_index(
 	VkPhysicalDevice device)
 {
 	uint32_t queue_family_count = 0;
@@ -201,8 +201,8 @@ uint32_t VkUtils::get_queue_family_index(
 	return idx;
 }
 
-VkUtils::swapchain_support_details_t
-VkUtils::query_swapchain_support(
+VKUtils::swapchain_support_details_t
+VKUtils::query_swapchain_support(
 	VkPhysicalDevice device,
 	VkSurfaceKHR surface)
 {
@@ -231,7 +231,7 @@ VkUtils::query_swapchain_support(
 	return details;
 }
 
-VkSurfaceFormatKHR VkUtils::choose_swapsurface_format(
+VkSurfaceFormatKHR VKUtils::choose_swapsurface_format(
 	const std::vector<VkSurfaceFormatKHR>& available_formats)
 {
 	for (const auto& af : available_formats)
@@ -245,7 +245,7 @@ VkSurfaceFormatKHR VkUtils::choose_swapsurface_format(
 	return available_formats[0];
 }
 
-VkPresentModeKHR VkUtils::choose_swap_present_mode(
+VkPresentModeKHR VKUtils::choose_swap_present_mode(
 	const std::vector<VkPresentModeKHR>& available_present_modes)
 {
 	for (const auto& am : available_present_modes)
@@ -258,7 +258,7 @@ VkPresentModeKHR VkUtils::choose_swap_present_mode(
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VkUtils::choose_swap_extent(
+VkExtent2D VKUtils::choose_swap_extent(
 	const VkSurfaceCapabilitiesKHR& capabilities,
 	void* hwnd)
 {
@@ -299,7 +299,7 @@ VkExtent2D VkUtils::choose_swap_extent(
 	}
 }
 
-VkShaderModule VkUtils::create_shader_module(
+VkShaderModule VKUtils::create_shader_module(
 	VkDevice device,
 	const std::vector<std::uint8_t>& code)
 {
@@ -317,7 +317,7 @@ VkShaderModule VkUtils::create_shader_module(
 	return shader_module;
 }
 
-uint32_t VkUtils::find_memory_type(
+uint32_t VKUtils::find_memory_type(
 	VkPhysicalDevice phy_device,
 	uint32_t type_filter,
 	VkMemoryPropertyFlags prop_flag)
@@ -337,7 +337,7 @@ uint32_t VkUtils::find_memory_type(
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void VkUtils::create_buffer(
+void VKUtils::create_buffer(
 	VkBuffer& buffer,
 	VkDeviceMemory& buffer_memory,
 	VkDevice device,
@@ -375,4 +375,31 @@ void VkUtils::create_buffer(
 	}
 
 	vkBindBufferMemory(device, buffer, buffer_memory, 0);
+}
+
+void VKUtils::choose_physical_device(
+	VkPhysicalDevice& physical_device,
+	VkInstance vulkan_instance,
+	VkSurfaceKHR vulkan_surface)
+{
+	uint32_t device_count = 0;
+	vkEnumeratePhysicalDevices(vulkan_instance, &device_count, nullptr);
+
+	if (device_count == 0) {
+		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+	}
+
+	std::vector<VkPhysicalDevice> devices(device_count);
+	vkEnumeratePhysicalDevices(vulkan_instance, &device_count, devices.data());
+
+	for (const auto& device : devices) {
+		if (is_device_suitable(device, vulkan_surface)) {
+			physical_device = device;
+			break;
+		}
+	}
+
+	GRT_CHECK(
+		VK_NULL_HANDLE != physical_device,
+		"failed to find a vulkan suitable GPU.");
 }

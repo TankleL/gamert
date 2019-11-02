@@ -22,3 +22,7 @@
 
 #define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}
 
+#define SAFE_DELETE(ptr)		if(ptr) { delete ptr; ptr = nullptr; }
+#define SAFE_DELETE_ARRAY(ptr)	if(ptr) { delete[] ptr; ptr = nullptr; }
+
+

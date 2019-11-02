@@ -1,16 +1,22 @@
 #include "osenv.hpp"
 
 #include "vkapp.hpp"
+#include "vkcontext.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-void init_gamert_app()
+void init_gamert_app(HWND hwnd)
 {
-	VKApplication::get_instance().init(
-		"gamert",
+	VKContext::get_instance().init("gamert",
 		"gamert engine",
 		VK_MAKE_VERSION(1, 0, 0),
-		VK_MAKE_VERSION(1, 0, 0));
+		VK_MAKE_VERSION(1, 0, 0),
+		hwnd);
+}
+
+void uninit_gamert_app()
+{
+	VKContext::get_instance().uninit();
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -53,7 +59,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	ShowWindow(hwnd, nCmdShow);
 	
-	init_gamert_app();
+	init_gamert_app(hwnd);
 
 	// Run the message loop.
 	MSG msg = { };
@@ -70,6 +76,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 	}
 
+	uninit_gamert_app();
 
 	return 0;
 }

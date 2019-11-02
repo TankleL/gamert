@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-class VkUtils
+class VKUtils
 {
 public:
 	typedef struct QueueFamilyIndices {
@@ -93,6 +93,11 @@ public:
 	);
 
 	static void create_pipeline();
+
+	static void choose_physical_device(
+		VkPhysicalDevice& physical_device,
+		VkInstance vulkan_instance,
+		VkSurfaceKHR vulkan_surface);
 
 public:
 	static std::vector<const char*>	enabled_instance_extension;
