@@ -44,7 +44,7 @@ void VKRenderer2d::_create_render_pass()
 	VkAttachmentDescription color_attachment = {};
 	color_attachment.format = _swapchain->get_vulkan_image_format();
 	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -153,6 +153,7 @@ void VKRenderer2d::_create_graphics_pipeline()
 	resmgr.read_binary_file(vs_code, "shaders/simple_2drgb.vert.spv");
 	resmgr.read_binary_file(fs_code, "shaders/simple_2drgb.frag.spv");
 
+
 	VkShaderModule vs_module = VKUtils::create_shader_module(vkdev, vs_code);
 	VkShaderModule fs_module = VKUtils::create_shader_module(vkdev, fs_code);
 	
@@ -181,7 +182,7 @@ void VKRenderer2d::_create_graphics_pipeline()
 		(uint32_t)VVertex2DRGBDescriptor::get_instance().attribute_description().size();
 	vertex_input_info.pVertexAttributeDescriptions =
 		VVertex2DRGBDescriptor::get_instance().attribute_description().data();
-
+	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_info = {};
 	input_assembly_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	input_assembly_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -356,7 +357,7 @@ void VKRenderer2d::_update_commands(int img_index)
 	render_pass_info.renderArea.offset = { 0, 0 };
 	render_pass_info.renderArea.extent = _swapchain->get_vulkan_extent();
 
-	VkClearValue clear_clr = { 1.f, 1.f, 1.f, 1.0f };
+	VkClearValue clear_clr = { 0.2f, 0.2f, 0.3f, 1.0f };
 	render_pass_info.clearValueCount = 1;
 	render_pass_info.pClearValues = &clear_clr;
 
@@ -367,7 +368,7 @@ void VKRenderer2d::_update_commands(int img_index)
 
 	// draw here
 
-	
+
 
 	// end render pass
 	vkCmdEndRenderPass(_primary_cmds[img_index]);
