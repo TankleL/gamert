@@ -5,10 +5,15 @@
 using namespace std;
 
 VKContext::VKContext()
-	: _device(nullptr)
-	, _vksrf(VK_NULL_HANDLE)
+	: _vksrf(VK_NULL_HANDLE)
 	, _vkinstance(VK_NULL_HANDLE)
 	, _vkdbgmsgr(VK_NULL_HANDLE)
+	, _hwnd(nullptr)
+	, _device(nullptr)
+	, _swapchain(nullptr)
+	, _max_frames_in_flight(0)
+	, _cur_frame(0)
+	, _flag_resized(false)
 {}
 
 void VKContext::init(
@@ -16,9 +21,9 @@ void VKContext::init(
 	const std::string& engine_name,
 	uint32_t app_version,
 	uint32_t engine_version,
-	void* hwnd)
+	void* hwnd,
+	int max_frames_in_flight)
 {
-
 	// create vulkan instance
 
 	VkApplicationInfo vkapp_info = {};
@@ -86,6 +91,7 @@ void VKContext::init(
 	GRT_CHECK(
 		VK_SUCCESS == vkCreateWin32SurfaceKHR(_vkinstance, &create_info, nullptr, &_vksrf),
 		"failed to create window surface.");
+	_hwnd = hwnd;
 	
 	// create device
 	VkPhysicalDevice physical_device = VK_NULL_HANDLE;
@@ -93,9 +99,32 @@ void VKContext::init(
 
 	_device = new VKDevice(physical_device);
 	_device->init();
+
+	// create sync objects
+	_max_frames_in_flight = max_frames_in_flight;
+	const VkDevice& vkdev = _device->get_vulkan_device();
+	_sp_imgavaliable.resize(_max_frames_in_flight);
+	_sp_rdrfinished.resize(_max_frames_in_flight);
+	_fn_inflight.resize(_max_frames_in_flight);
+
+	VkSemaphoreCreateInfo semaphore_info = {};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = {};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	
+	for (size_t i = 0; i < _max_frames_in_flight; ++i)
+	{
+		GRT_CHECK(
+			vkCreateSemaphore(vkdev, &semaphore_info, nullptr, &_sp_imgavaliable[i]) == VK_SUCCESS &&
+			vkCreateSemaphore(vkdev, &semaphore_info, nullptr, &_sp_rdrfinished[i]) == VK_SUCCESS &&
+			vkCreateFence(vkdev, &fence_info, nullptr, &_fn_inflight[i]) == VK_SUCCESS,
+			"failed to create synchronization objects for a frame.");
+	}
 }
 
-void VKContext::uninit()
+void VKContext::destroy()
 {
 	_device->uninit();
 
@@ -112,4 +141,34 @@ void VKContext::uninit()
 	vkDestroyInstance(_vkinstance, nullptr);
 }
 
+void VKContext::register_renderer(VKRenderer* renderer)
+{
+	_renderers.push_back(renderer);
+}
+
+void VKContext::unregister_all_renderers()
+{
+	_renderers.clear();
+}
+
+void VKContext::resize()
+{
+	if (_device)
+	{
+		bool need_cleanup = _swapchain != nullptr;
+
+		GRT_SAFE_DELETE(_swapchain);
+		_swapchain = new VKSwapchain();
+		_swapchain->init(
+			_device->get_vulkan_physical_device(),
+			_vksrf,
+			_hwnd);
+
+		for (auto rdr : _renderers)
+		{
+			if (need_cleanup)	rdr->unint();
+			rdr->init(_swapchain);
+		}
+	}
+}
 

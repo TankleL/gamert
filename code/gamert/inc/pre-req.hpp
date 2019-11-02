@@ -20,9 +20,12 @@
 #include <cstdarg>
 #include <unordered_map>
 
+// GRT Macros - Game-RT Macros
 #define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}
+#define GRT_VULKAN_FACTOR_GETTER(factor_type, factor_name, private_var_name)	\
+	factor_type get_vulkan_##factor_name() const	{return private_var_name;}
 
-#define SAFE_DELETE(ptr)		if(ptr) { delete ptr; ptr = nullptr; }
-#define SAFE_DELETE_ARRAY(ptr)	if(ptr) { delete[] ptr; ptr = nullptr; }
+#define GRT_SAFE_DELETE(ptr)		if(ptr) { delete ptr; ptr = nullptr; }
+#define GRT_SAFE_DELETE_ARRAY(ptr)	if(ptr) { delete[] ptr; ptr = nullptr; }
 
 

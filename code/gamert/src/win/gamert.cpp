@@ -2,8 +2,23 @@
 
 #include "vkapp.hpp"
 #include "vkcontext.hpp"
+#include "vkrenderer2d.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+typedef void(*update_frame_fnp_t)(void);
+
+VKRenderer2d g_render;
+
+void dummy_update()
+{}
+
+void render_update()
+{
+	g_render.update(30.f);
+}
+
+update_frame_fnp_t g_update_function = dummy_update;
 
 void init_gamert_app(HWND hwnd)
 {
@@ -12,11 +27,16 @@ void init_gamert_app(HWND hwnd)
 		VK_MAKE_VERSION(1, 0, 0),
 		VK_MAKE_VERSION(1, 0, 0),
 		hwnd);
+
+	VKContext::get_instance().register_renderer(&g_render);
+	VKContext::get_instance().resize();
+
+	g_update_function = render_update;
 }
 
 void uninit_gamert_app()
 {
-	VKContext::get_instance().uninit();
+	VKContext::get_instance().destroy();
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
@@ -72,7 +92,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else
 		{
-			Sleep(30);
+			g_update_function();
+			Sleep(100);
 		}
 	}
 
@@ -86,6 +107,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch (uMsg)
 	{
 	case WM_SIZE:
+		VKContext::get_instance().resize();
 		break;
 
 	case WM_DESTROY:
