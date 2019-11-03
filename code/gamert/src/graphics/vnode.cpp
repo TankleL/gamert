@@ -50,22 +50,25 @@ VNode* VNode::detach_child(const std::string& name)
 
 void VNode::render(const render_param_t& param)
 {
-	on_prerender();
-	for (const auto& child : _children)
+	if (_visible)
 	{
-		child->on_prerender();
-	}
+		on_prerender();
+		for (const auto& child : _children)
+		{
+			child->on_prerender();
+		}
 
-	on_render(param);
-	for (const auto& child : _children)
-	{
-		child->on_render(param);
-	}
+		on_render(param);
+		for (const auto& child : _children)
+		{
+			child->on_render(param);
+		}
 
-	on_postrender();
-	for (const auto& child : _children)
-	{
-		child->on_postrender();
+		on_postrender();
+		for (const auto& child : _children)
+		{
+			child->on_postrender();
+		}
 	}
 }
 

@@ -2,6 +2,7 @@
 
 #include "pre-req.hpp"
 #include "vulkan/vulkan.hpp"
+#include "vvertex.hpp"
 
 class VKRenderer;
 
@@ -41,6 +42,9 @@ public:
 	VNode*	detach_child(const std::string& name);
 
 private:
+	VFVec3					_position;
+	VFVec3					_rotation;
+	VFVec3					_scale;
 	std::vector<VNode*>		_children;
 	std::string				_name;
 	bool					_visible;

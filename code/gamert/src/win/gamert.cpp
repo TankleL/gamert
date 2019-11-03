@@ -5,6 +5,7 @@
 #include "vkrenderer2d.hpp"
 #include "vscenegraph.hpp"
 #include "vnode-quad.hpp"
+#include "vmatrix.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -63,6 +64,8 @@ void uninit_gamert_app()
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
+	VMatrix<float, 4,4> mat;
+
 	// Register the window class.
 	const wchar_t CLASS_NAME[] = L"Gamert Window Class";
 	const wchar_t MAINWIN_NAME[] = L"Gamert View";

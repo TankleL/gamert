@@ -7,7 +7,9 @@ class VVector
 {
 public:
 	VVector() noexcept
-	{}
+	{
+		memset(_data.data(), 0, _data.size() * sizeof(DataType));
+	}
 
 	VVector(const std::array<DataType, rank>& data) noexcept
 		: _data(data)
@@ -18,14 +20,12 @@ public:
 	{}
 
 	VVector(const VVector& rhs) noexcept
-	{
-		_data = rhs._data;
-	}
+		: _data(rhs._data)
+	{}
 
 	VVector(VVector&& rhs) noexcept
-	{
-		_data = std::move(rhs._data);
-	}
+		: _data(std::move(rhs._data))
+	{}
 	
 	VVector& operator=(const std::array<DataType, rank>& data) noexcept
 	{
@@ -72,5 +72,5 @@ typedef VVector<float, 3>	VFVec3;
 typedef VVector<float, 4>	VFVec4;
 typedef VVector<double, 2>	VDvec2;
 typedef VVector<double, 3>	VDvec3;
-typedef VVector<double, 3>	VDvec4;
+typedef VVector<double, 4>	VDvec4;
 
