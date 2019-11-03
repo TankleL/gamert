@@ -6,13 +6,24 @@
 
 using namespace std;
 
+VSceneGraph VKRenderer2d::_dummy_graph;
+
 VKRenderer2d::VKRenderer2d()
 	: _render_pass(VK_NULL_HANDLE)
 	, _graphics_pipeline(VK_NULL_HANDLE)
 	, _graphics_pipeline_layout(VK_NULL_HANDLE)
+	, _scene_graph(&_dummy_graph)
 	, _swapchain(nullptr)
 	, _initialized(false)
 {}
+
+void VKRenderer2d::set_scene_graph(VSceneGraph* graph)
+{
+	if (graph)
+		_scene_graph = graph;
+	else
+		_scene_graph = &_dummy_graph;
+}
 
 void VKRenderer2d::init(VKSwapchain* swapchain)
 {
@@ -37,6 +48,11 @@ void VKRenderer2d::unint()
 		_destroy_render_pass();
 		_initialized = false;
 	}
+}
+
+VkPipeline VKRenderer2d::get_vulkan_pipeline() const
+{
+	return _graphics_pipeline;
 }
 
 void VKRenderer2d::_create_render_pass()
@@ -331,7 +347,7 @@ void VKRenderer2d::_destroy_primary_commandbuffers()
 *	- performance sensitive method
 *	- get called more than 60 Hz
 */
-void VKRenderer2d::_update_commands(int img_index)
+void VKRenderer2d::_update_commands(float elapsed, int img_index)
 {
 	// reset the primary command buffer
 	GRT_CHECK(
@@ -367,8 +383,7 @@ void VKRenderer2d::_update_commands(int img_index)
 		VK_SUBPASS_CONTENTS_INLINE);
 
 	// draw here
-
-
+	_scene_graph->update(this, _primary_cmds[img_index], elapsed);
 
 	// end render pass
 	vkCmdEndRenderPass(_primary_cmds[img_index]);
@@ -424,7 +439,7 @@ void VKRenderer2d::update(float elapsed)
 	}
 
 	// update commands
-	_update_commands(img_idx);
+	_update_commands(elapsed, img_idx);
 
 	// prepare submission
 	VkSubmitInfo submit_info = {};

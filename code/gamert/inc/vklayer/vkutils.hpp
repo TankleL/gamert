@@ -89,15 +89,20 @@ public:
 		VkPhysicalDevice physical_device,
 		VkDeviceSize size,
 		VkBufferUsageFlags usage,
-		VkMemoryPropertyFlags properties
-	);
-
-	static void create_pipeline();
+		VkMemoryPropertyFlags properties);
 
 	static void choose_physical_device(
 		VkPhysicalDevice& physical_device,
 		VkInstance vulkan_instance,
 		VkSurfaceKHR vulkan_surface);
+
+	static void copy_buffer(
+		VkBuffer dest,
+		VkBuffer src,
+		VkDeviceSize size,
+		VkDevice device,
+		VkQueue graphics_queue,
+		VkCommandPool cmdpool);
 
 public:
 	static std::vector<const char*>	enabled_instance_extension;

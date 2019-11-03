@@ -403,3 +403,43 @@ void VKUtils::choose_physical_device(
 		VK_NULL_HANDLE != physical_device,
 		"failed to find a vulkan suitable GPU.");
 }
+
+void VKUtils::copy_buffer(
+	VkBuffer dest,
+	VkBuffer src,
+	VkDeviceSize size,
+	VkDevice device,
+	VkQueue graphics_queue,
+	VkCommandPool cmdpool)
+{
+	VkCommandBufferAllocateInfo alloc_info = {};
+	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	alloc_info.commandPool = cmdpool;
+	alloc_info.commandBufferCount = 1;
+
+	VkCommandBuffer cmd;
+	vkAllocateCommandBuffers(device, &alloc_info, &cmd);
+
+	VkCommandBufferBeginInfo begin_info = {};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(cmd, &begin_info);
+
+	VkBufferCopy copy_region = {};
+	copy_region.size = size;
+	vkCmdCopyBuffer(cmd, src, dest, 1, &copy_region);
+
+	vkEndCommandBuffer(cmd);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+
+	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(graphics_queue);
+
+	vkFreeCommandBuffers(device, cmdpool, 1, &cmd);
+}

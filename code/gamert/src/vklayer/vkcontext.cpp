@@ -202,3 +202,9 @@ void VKContext::resize()
 	}
 }
 
+void VKContext::wait_device_idle()
+{
+	if(_device)
+		vkDeviceWaitIdle(_device->get_vulkan_device());
+}
+

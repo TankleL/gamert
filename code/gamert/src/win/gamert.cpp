@@ -3,12 +3,15 @@
 #include "vkapp.hpp"
 #include "vkcontext.hpp"
 #include "vkrenderer2d.hpp"
+#include "vscenegraph.hpp"
+#include "vnode-quad.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 typedef void(*update_frame_fnp_t)(void);
 
-VKRenderer2d g_render;
+VKRenderer2d	g_render;
+VSceneGraph		g_scene;
 
 void dummy_update()
 {}
@@ -31,11 +34,30 @@ void init_gamert_app(HWND hwnd)
 	VKContext::get_instance().register_renderer(&g_render);
 	VKContext::get_instance().resize();
 
+	VNode* root = new VNode();
+	root->set_name("root");
+	VNodeQuad* quad = new VNodeQuad();
+	{
+		std::array<VVertex2DRGB, 4> vertices;
+		vertices[0] = VVertex2DRGB(VFVec2({ -0.5f, -0.5f }), VFVec3({ 1.0f, 0.0f, 0.0f }));
+		vertices[1] = VVertex2DRGB(VFVec2({ 0.5f, -0.5f }), VFVec3({ 0.0f, 1.0f, 0.0f }));
+		vertices[2] = VVertex2DRGB(VFVec2({ 0.5f, 0.5f }), VFVec3({ 0.0f, 0.0f, 1.0f }));
+		vertices[3] = VVertex2DRGB(VFVec2({ -0.5f, 0.5f }), VFVec3({ 1.0f, 1.0f, 1.0f }));
+		
+		quad->set_vertices(vertices);
+		quad->set_indices({ 0, 1, 2, 2, 3, 0 });
+	}
+
+	root->attach_child(quad);
+	g_scene.switch_root_node(root);
+	g_render.set_scene_graph(&g_scene);
 	g_update_function = render_update;
 }
 
 void uninit_gamert_app()
 {
+	VNode* root = g_scene.switch_root_node(nullptr);
+	delete root;	// root will release all its children.
 	VKContext::get_instance().destroy();
 }
 
@@ -97,6 +119,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 	}
 
+	VKContext::get_instance().wait_device_idle();
 	uninit_gamert_app();
 
 	return 0;

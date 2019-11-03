@@ -19,8 +19,12 @@ public:
 class VVertex2DRGB
 {
 public:
+	VVertex2DRGB();
+	VVertex2DRGB(const VFVec2& position, const VFVec3& color);
+
+public:
 	VFVec2	pos;
-	VFVec3	color;
+	VFVec3	clr;
 };
 
 class VVertex2DRGBDescriptor

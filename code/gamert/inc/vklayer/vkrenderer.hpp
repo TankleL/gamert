@@ -7,7 +7,8 @@ class VKSwapchain;
 class VKRenderer
 {
 public:
-	virtual void init(VKSwapchain* swapchain) = 0;
-	virtual void unint() = 0;
-	virtual void update(float elapsed) = 0;
+	virtual void		init(VKSwapchain* swapchain) = 0;
+	virtual void		unint() = 0;
+	virtual void		update(float elapsed) = 0;
+	virtual VkPipeline	get_vulkan_pipeline() const = 0;
 };

@@ -22,6 +22,7 @@ public:
 	void register_renderer(VKRenderer* renderer);
 	void unregister_all_renderers();
 
+	void wait_device_idle();
 	void resize();
 	void destroy();
 
@@ -32,6 +33,7 @@ public:
 
 	GRT_VULKAN_FACTOR_GETTER(VkSurfaceKHR, surface, _vksrf);
 	GRT_VULKAN_FACTOR_GETTER(VkDevice, device, _device->get_vulkan_device());
+	GRT_VULKAN_FACTOR_GETTER(VkPhysicalDevice, physical_device, _device->get_vulkan_physical_device());
 	GRT_VULKAN_FACTOR_GETTER(const std::vector<VkSemaphore>&, semaphores_image_avaliable, _sp_imgavaliable);
 	GRT_VULKAN_FACTOR_GETTER(const std::vector<VkSemaphore>&, semaphores_rendering_finished, _sp_rdrfinished);
 	GRT_VULKAN_FACTOR_GETTER(const std::vector<VkFence>&, fences_inflight, _fn_inflight);

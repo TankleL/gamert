@@ -3,14 +3,21 @@
 #include "pre-req.hpp"
 #include "vulkan/vulkan.hpp"
 
-class RenderMgr;
+class VKRenderer;
 
 /**
  * @desc visual node
  */
 class VNode
 {
-	friend RenderMgr;
+public:
+	typedef struct _st_render_param
+	{
+		VkCommandBuffer		cmd;
+		const VKRenderer*	renderer;
+		float				elapsed;
+	} render_param_t;
+
 public:
 	VNode();
 	virtual ~VNode();
@@ -18,12 +25,14 @@ public:
 public:
 	virtual void on_init() {};
 	virtual void on_prerender() {};
-	virtual void on_render(std::vector<VkCommandBuffer>& cmdqueue, VkFramebuffer frmbuffer, VkCommandPool cmdpool) {};
+	virtual void on_render(const render_param_t& param) {};
 	virtual void on_postrender() {};
 	virtual void on_uninit() {};
 
 public:
-	void render(std::vector<VkCommandBuffer>& cmdqueue, VkFramebuffer frmbuffer, VkCommandPool cmdpool);
+	void init();
+	void render(const render_param_t& param);
+	void uninit();
 
 	void set_name(const std::string& name);
 	std::string get_name() const;

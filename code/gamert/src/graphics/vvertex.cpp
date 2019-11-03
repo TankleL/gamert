@@ -23,7 +23,7 @@ VVertex2DRGBDescriptor::VVertex2DRGBDescriptor()
 		attr_desc.binding = 0;
 		attr_desc.location = 1;
 		attr_desc.format = VK_FORMAT_R32G32B32_SFLOAT;
-		attr_desc.offset = offsetof(VVertex2DRGB, color);
+		attr_desc.offset = offsetof(VVertex2DRGB, clr);
 		_s_attri_desc.push_back(attr_desc);
 	}
 }
@@ -37,3 +37,12 @@ const std::vector<VkVertexInputAttributeDescription>& VVertex2DRGBDescriptor::at
 {
 	return _s_attri_desc;
 }
+
+VVertex2DRGB::VVertex2DRGB()
+{}
+
+VVertex2DRGB::VVertex2DRGB(const VFVec2& position, const VFVec3& color)
+	: pos(position)
+	, clr(color)
+{}
+
