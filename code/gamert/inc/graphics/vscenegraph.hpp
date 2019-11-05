@@ -12,7 +12,7 @@ public:
 	virtual ~VSceneGraph();
 
 public:
-	void update(VKRenderer* renderer, VkCommandBuffer cmd, float elapsed);
+	void update(VKRenderer* renderer, VkCommandBuffer cmd, int fbo_index, float elapsed);
 	VNode* switch_root_node(VNode* new_node);
 
 private:

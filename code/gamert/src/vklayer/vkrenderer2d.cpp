@@ -12,6 +12,8 @@ VKRenderer2d::VKRenderer2d()
 	: _render_pass(VK_NULL_HANDLE)
 	, _graphics_pipeline(VK_NULL_HANDLE)
 	, _graphics_pipeline_layout(VK_NULL_HANDLE)
+	, _descriptor_pool(VK_NULL_HANDLE)
+	, _descriptor_set_layout(VK_NULL_HANDLE)
 	, _scene_graph(&_dummy_graph)
 	, _swapchain(nullptr)
 	, _initialized(false)
@@ -32,7 +34,11 @@ void VKRenderer2d::init(VKSwapchain* swapchain)
 		_swapchain = swapchain;
 		_create_render_pass();
 		_create_framebuffers();
+		_create_descriptor_set_layout();
 		_create_graphics_pipeline();
+		_create_uniform_buffers();
+		_create_descriptor_pool();
+		_create_descriptor_set();
 		_create_primary_commandbuffers();
 		_initialized = true;
 	}
@@ -43,7 +49,11 @@ void VKRenderer2d::unint()
 	if (_initialized)
 	{
 		_destroy_primary_commandbuffers();
+		_destroy_descriptor_set();
+		_destroy_descriptor_pool();
+		_destroy_uniform_buffers();
 		_destroy_graphics_pipeline();
+		_destroy_descriptor_set_layout();
 		_destroy_framebuffers();
 		_destroy_render_pass();
 		_initialized = false;
@@ -53,6 +63,16 @@ void VKRenderer2d::unint()
 VkPipeline VKRenderer2d::get_vulkan_pipeline() const
 {
 	return _graphics_pipeline;
+}
+
+VkPipelineLayout VKRenderer2d::get_vulkan_pipeline_layout() const
+{
+	return _graphics_pipeline_layout;
+}
+
+const std::vector<VkDescriptorSet>& VKRenderer2d::get_vulkan_descriptor_set() const
+{
+	return _descriptor_sets;
 }
 
 void VKRenderer2d::_create_render_pass()
@@ -162,7 +182,7 @@ void VKRenderer2d::_destroy_framebuffers()
 void VKRenderer2d::_create_graphics_pipeline()
 {
 	ResourcesMgr& resmgr = ResourcesMgr::get_instance();
-	VkDevice vkdev = VKContext::get_instance().get_vulkan_device();
+	const VkDevice vkdev = VKContext::get_instance().get_vulkan_device();
 	std::vector<std::uint8_t> vs_code;
 	std::vector<std::uint8_t> fs_code;
 	
@@ -260,8 +280,8 @@ void VKRenderer2d::_create_graphics_pipeline()
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 0;
-	pipeline_layout_info.pushConstantRangeCount = 0;
+	pipeline_layout_info.setLayoutCount = 1;
+	pipeline_layout_info.pSetLayouts = &_descriptor_set_layout;
 
 	GRT_CHECK(
 		VK_SUCCESS == vkCreatePipelineLayout(
@@ -302,7 +322,7 @@ void VKRenderer2d::_create_graphics_pipeline()
 
 void VKRenderer2d::_destroy_graphics_pipeline()
 {
-	VkDevice vkdev = VKContext::get_instance().get_vulkan_device();
+	const VkDevice vkdev = VKContext::get_instance().get_vulkan_device();
 	vkDestroyPipeline(vkdev, _graphics_pipeline, nullptr);
 	vkDestroyPipelineLayout(vkdev, _graphics_pipeline_layout, nullptr);
 
@@ -339,6 +359,173 @@ void VKRenderer2d::_destroy_primary_commandbuffers()
 		_primary_cmds.data());
 	_primary_cmds.clear();
 }
+
+void VKRenderer2d::_create_uniform_buffers()
+{
+	const VkDevice			vkdev = VKContext::get_instance().get_vulkan_device();
+	const VkPhysicalDevice	vkphydev = VKContext::get_instance().get_vulkan_physical_device();
+	int img_count = (int)_swapchain->get_vulkan_image_views().size();
+	VkDeviceSize buffer_size = sizeof(_uniform_buffer_object_t);
+
+	_uniform_buffers.resize(img_count);
+	_uniform_buffer_mems.resize(img_count);
+
+	for (int i = 0; i < img_count; ++i)
+	{
+		VKUtils::create_buffer(
+			_uniform_buffers[i],
+			_uniform_buffer_mems[i],
+			vkdev,
+			vkphydev,
+			buffer_size,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	}
+}
+
+void VKRenderer2d::_destroy_uniform_buffers()
+{
+	const size_t	ubo_count = _uniform_buffers.size();
+	const VkDevice	vkdev = VKContext::get_instance().get_vulkan_device();
+
+	for (size_t i = 0; i < ubo_count; ++i)
+	{
+		vkDestroyBuffer(vkdev, _uniform_buffers[i], nullptr);
+		vkFreeMemory(vkdev, _uniform_buffer_mems[i], nullptr);
+	}
+
+	_uniform_buffers.clear();
+	_uniform_buffer_mems.clear();
+}
+
+void VKRenderer2d::_create_descriptor_pool()
+{
+	VkDescriptorPoolSize pool_size_info = {};
+	pool_size_info.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	pool_size_info.descriptorCount = static_cast<uint32_t>(
+		_swapchain->get_vulkan_image_views().size());
+
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.poolSizeCount = 1;
+	pool_info.pPoolSizes = &pool_size_info;
+	pool_info.maxSets = static_cast<uint32_t>(
+		_swapchain->get_vulkan_image_views().size());
+
+	GRT_CHECK(
+		VK_SUCCESS == vkCreateDescriptorPool(
+			VKContext::get_instance().get_vulkan_device(),
+			&pool_info,
+			nullptr,
+			&_descriptor_pool),
+		"failed to create descriptor pool.");
+}
+
+void VKRenderer2d::_destroy_descriptor_pool()
+{
+	if (VK_NULL_HANDLE != _descriptor_pool)
+	{
+		vkDestroyDescriptorPool(
+			VKContext::get_instance().get_vulkan_device(),
+			_descriptor_pool,
+			nullptr);
+	}
+}
+
+void VKRenderer2d::_create_descriptor_set_layout()
+{
+	VkDescriptorSetLayoutBinding layout_binding = {};
+	layout_binding.binding = 0;
+	layout_binding.descriptorCount = 1;
+	layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	layout_binding.pImmutableSamplers = nullptr;
+	layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layout_info = {};
+	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount = 1;
+	layout_info.pBindings = &layout_binding;
+
+	GRT_CHECK(
+		VK_SUCCESS == vkCreateDescriptorSetLayout(
+			VKContext::get_instance().get_vulkan_device(),
+			&layout_info,
+			nullptr,
+			&_descriptor_set_layout),
+		"failed to create descriptor set layout.");
+}
+
+void VKRenderer2d::_destroy_descriptor_set_layout()
+{
+	if (VK_NULL_HANDLE != _descriptor_set_layout)
+	{
+		vkDestroyDescriptorSetLayout(
+			VKContext::get_instance().get_vulkan_device(),
+			_descriptor_set_layout,
+			nullptr);
+	}
+}
+
+void VKRenderer2d::_create_descriptor_set()
+{
+	const size_t img_count = _swapchain->get_vulkan_image_views().size();
+
+	std::vector<VkDescriptorSetLayout> layouts(
+		img_count,
+		_descriptor_set_layout);
+	VkDescriptorSetAllocateInfo alloc_info = {};
+	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	alloc_info.descriptorPool = _descriptor_pool;
+	alloc_info.descriptorSetCount = static_cast<uint32_t>(img_count);
+	alloc_info.pSetLayouts = layouts.data();
+
+	_descriptor_sets.resize(img_count);
+
+	GRT_CHECK(
+		VK_SUCCESS == vkAllocateDescriptorSets(
+			VKContext::get_instance().get_vulkan_device(),
+			&alloc_info,
+			_descriptor_sets.data()),
+		"failed to allocate descriptor sets.");
+
+	for (size_t i = 0; i < img_count; ++i)
+	{
+		VkDescriptorBufferInfo buffer_info = {};
+		buffer_info.buffer = _uniform_buffers[i];
+		buffer_info.offset = 0;
+		buffer_info.range = sizeof(_uniform_buffer_object_t);
+
+		VkWriteDescriptorSet descriptor_write = {};
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstSet = _descriptor_sets[i];
+		descriptor_write.dstBinding = 0;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_write.descriptorCount = 1;
+		descriptor_write.pBufferInfo = &buffer_info;
+
+		vkUpdateDescriptorSets(
+			VKContext::get_instance().get_vulkan_device(),
+			1,
+			&descriptor_write,
+			0,
+			nullptr);
+	}
+}
+
+void VKRenderer2d::_destroy_descriptor_set()
+{
+	if(_descriptor_sets.size() > 0)
+	{
+		vkFreeDescriptorSets(
+			VKContext::get_instance().get_vulkan_device(),
+			_descriptor_pool,
+			(uint32_t)_swapchain->get_vulkan_image_views().size(),
+			_descriptor_sets.data());
+	}
+	_descriptor_sets.clear();
+}
+
 
 /**
 * @method VKRenderer2d::_update_commands
@@ -383,7 +570,7 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 		VK_SUBPASS_CONTENTS_INLINE);
 
 	// draw here
-	_scene_graph->update(this, _primary_cmds[img_index], elapsed);
+	_scene_graph->update(this, _primary_cmds[img_index], img_index, elapsed);
 
 	// end render pass
 	vkCmdEndRenderPass(_primary_cmds[img_index]);

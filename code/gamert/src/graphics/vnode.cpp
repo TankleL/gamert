@@ -3,7 +3,8 @@
 using namespace std;
 
 VNode::VNode()
-	: _visible(true)
+	: _parent(nullptr)
+	, _visible(true)
 {}
 
 VNode::~VNode()
@@ -26,6 +27,7 @@ std::string VNode::get_name() const
 
 void VNode::attach_child(VNode* child)
 {
+	child->_parent = this;
 	_children.push_back(child);
 }
 
@@ -40,6 +42,7 @@ VNode* VNode::detach_child(const std::string& name)
 		if ((*iter_child)->get_name() == name)
 		{
 			result = *iter_child;
+			result->_parent = nullptr;
 			_children.erase(iter_child);
 			break;
 		}

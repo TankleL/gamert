@@ -13,12 +13,13 @@ VSceneGraph::VSceneGraph()
 VSceneGraph::~VSceneGraph()
 {}
 
-void VSceneGraph::update(VKRenderer* renderer, VkCommandBuffer cmd, float elapsed)
+void VSceneGraph::update(VKRenderer* renderer, VkCommandBuffer cmd, int fbo_index, float elapsed)
 {
 	VNode::render_param_t	param = {};
 	param.cmd = cmd;
 	param.renderer = renderer;
 	param.elapsed = elapsed;
+	param.fbo_index = fbo_index;
 	_root_node->render(param);
 }
 

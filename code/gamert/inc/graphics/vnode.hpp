@@ -16,6 +16,7 @@ public:
 	{
 		VkCommandBuffer		cmd;
 		const VKRenderer*	renderer;
+		int					fbo_index;
 		float				elapsed;
 	} render_param_t;
 
@@ -47,6 +48,7 @@ private:
 	VFVec3					_scale;
 	std::vector<VNode*>		_children;
 	std::string				_name;
+	VNode*					_parent;
 	bool					_visible;
 };
 
