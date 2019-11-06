@@ -190,15 +190,15 @@ void VNodeQuad::on_render(const render_param_t& param)
 		0,
 		VK_INDEX_TYPE_UINT16);
 
-	vkCmdBindDescriptorSets(
-		param.cmd,
-		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		param.renderer->get_vulkan_pipeline_layout(),
-		0,
-		1,
-		&param.renderer->get_vulkan_descriptor_set().at(param.fbo_index),
-		0, 
-		nullptr);
+	//vkCmdBindDescriptorSets(
+	//	param.cmd,
+	//	VK_PIPELINE_BIND_POINT_GRAPHICS,
+	//	param.renderer->get_vulkan_pipeline_layout(),
+	//	0,
+	//	1,
+	//	&param.renderer->get_vulkan_descriptor_set().at(param.fbo_index),
+	//	0, 
+	//	nullptr);
 
 	vkCmdDrawIndexed(
 		param.cmd,

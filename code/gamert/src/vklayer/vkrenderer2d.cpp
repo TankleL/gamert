@@ -409,6 +409,7 @@ void VKRenderer2d::_create_descriptor_pool()
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.poolSizeCount = 1;
 	pool_info.pPoolSizes = &pool_size_info;
+	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	pool_info.maxSets = static_cast<uint32_t>(
 		_swapchain->get_vulkan_image_views().size());
 
@@ -520,7 +521,7 @@ void VKRenderer2d::_destroy_descriptor_set()
 		vkFreeDescriptorSets(
 			VKContext::get_instance().get_vulkan_device(),
 			_descriptor_pool,
-			(uint32_t)_swapchain->get_vulkan_image_views().size(),
+			(uint32_t)_descriptor_sets.size(),
 			_descriptor_sets.data());
 	}
 	_descriptor_sets.clear();
@@ -571,6 +572,16 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 
 	// draw here
 	_scene_graph->update(this, _primary_cmds[img_index], img_index, elapsed);
+
+	vkCmdBindDescriptorSets(
+		_primary_cmds[img_index],
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		_graphics_pipeline_layout,
+		0,
+		1,
+		&_descriptor_sets[img_index],
+		0, 
+		nullptr);
 
 	// end render pass
 	vkCmdEndRenderPass(_primary_cmds[img_index]);
