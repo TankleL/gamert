@@ -146,27 +146,57 @@ void VKContext::init(
 
 void VKContext::destroy()
 {
+	_swapchain->uninit();
+
+	// clean up synchronous objects
+	for (auto& sp : _sp_imgavaliable)
+	{
+		vkDestroySemaphore(_device->get_vulkan_device(), sp, nullptr);
+	}
+	_sp_imgavaliable.clear();
+
+	for (auto& sp : _sp_rdrfinished)
+	{
+		vkDestroySemaphore(_device->get_vulkan_device(), sp, nullptr);
+	}
+	_sp_rdrfinished.clear();
+
+	for (auto& fn : _fn_inflight)
+	{
+		vkDestroyFence(_device->get_vulkan_device(), fn, nullptr);
+	}
+	_fn_inflight.clear();
+
 	// clean up command pool
-	vkDestroyCommandPool(_device->get_vulkan_device(), _vkcmdpool, nullptr);
-	_vkcmdpool = VK_NULL_HANDLE;
+	if (VK_NULL_HANDLE != _vkcmdpool)
+	{
+		vkDestroyCommandPool(_device->get_vulkan_device(), _vkcmdpool, nullptr);
+		_vkcmdpool = VK_NULL_HANDLE;
+	}
+
+	// clean up surface
+	if (VK_NULL_HANDLE != _vksrf)
+	{
+		vkDestroySurfaceKHR(_vkinstance, _vksrf, nullptr);
+		_vksrf = VK_NULL_HANDLE;
+	}
 
 	// clean up device
 	_device->uninit();
 
-	// clean up surface
-	vkDestroySurfaceKHR(_vkinstance, _vksrf, nullptr);
-	_vksrf = VK_NULL_HANDLE;
-
 	// clean up vk debug utils
-	if (VKUtils::enabled_validation_layer)
+	if (VKUtils::enabled_validation_layer && VK_NULL_HANDLE != _vkdbgmsgr)
 	{
 		VKUtils::destroy_debug_utils_messenger_ext(_vkinstance, _vkdbgmsgr, nullptr);
 		_vkdbgmsgr = VK_NULL_HANDLE;
 	}
 
 	// clean up vk instance
-	vkDestroyInstance(_vkinstance, nullptr);
-	_vkinstance = VK_NULL_HANDLE;
+	if (VK_NULL_HANDLE != _vkinstance)
+	{
+		vkDestroyInstance(_vkinstance, nullptr);
+		_vkinstance = VK_NULL_HANDLE;
+	}
 }
 
 void VKContext::register_renderer(VKRenderer* renderer)

@@ -59,6 +59,8 @@ void uninit_gamert_app()
 {
 	VNode* root = g_scene.switch_root_node(nullptr);
 	delete root;	// root will release all its children.
+
+	g_render.unint();
 	VKContext::get_instance().destroy();
 }
 

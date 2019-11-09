@@ -129,6 +129,10 @@ void VKSwapchain::uninit()
 	_vkscimgviews.clear();
 
 	// clean up swapchain
-	vkDestroySwapchainKHR(vkdevice, _vkschain, nullptr);
+	if (VK_NULL_HANDLE != _vkschain)
+	{
+		vkDestroySwapchainKHR(vkdevice, _vkschain, nullptr);
+		_vkschain = VK_NULL_HANDLE;
+	}
 }
 

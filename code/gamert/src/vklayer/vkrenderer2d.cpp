@@ -383,8 +383,8 @@ void VKRenderer2d::_create_uniform_buffers()
 			vkdev,
 			vkphydev,
 			size_ubuf_stable,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		VKUtils::create_buffer(
 			_ubuf_combined_dc[i],
@@ -430,6 +430,17 @@ void VKRenderer2d::_destroy_uniform_buffers()
 		}
 		_ubuf_combined_dc.clear();
 		_ubuf_combined_dc_mem.clear();
+	}
+
+	{
+		const auto cnt = _ubuf_single_dc.size();
+		for (size_t i = 0; i < cnt; ++i)
+		{
+			vkDestroyBuffer(vkdev, _ubuf_single_dc[i], nullptr);
+			vkFreeMemory(vkdev, _ubuf_single_dc_mem[i], nullptr);
+		}
+		_ubuf_single_dc.clear();
+		_ubuf_single_dc_mem.clear();
 	}
 }
 
@@ -660,26 +671,48 @@ void VKRenderer2d::_ensure_stable_uniform_data()
 {
 	const VkDevice& vkdev =
 		VKContext::get_instance().get_vulkan_device();
+	const VkPhysicalDevice& vkphydev = VKContext::get_instance().get_vulkan_physical_device();
 	const VkExtent2D& vkext = 
 		_swapchain->get_vulkan_extent();
-	for (const auto& mm : _ubuf_stable_mem)
+
+	for (const auto& ubuf : _ubuf_stable)
 	{
 		_ubuf_stable_t ubo;
 		ubo.extent[0] = (float)vkext.width;
 		ubo.extent[1] = (float)vkext.height;
 
+		VkBuffer staging_buffer;
+		VkDeviceMemory staging_buffer_mem;
+		VKUtils::create_buffer(
+			staging_buffer,
+			staging_buffer_mem,
+			vkdev,
+			vkphydev,
+			sizeof(ubo),
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
 		void* data = nullptr;
 		vkMapMemory(
 			vkdev,
-			mm,
+			staging_buffer_mem,
 			0,
 			sizeof(ubo),
 			0,
 			&data);
-
 		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(vkdev, staging_buffer_mem);
 
-		vkUnmapMemory(vkdev, mm);
+		VKUtils::copy_buffer(
+			ubuf,
+			staging_buffer,
+			sizeof(ubo),
+			vkdev,
+			VKContext::get_instance().get_device()->get_vulkan_graphics_queue(),
+			VKContext::get_instance().get_vulkan_command_pool());
+
+		vkDestroyBuffer(vkdev, staging_buffer, nullptr);
+		vkFreeMemory(vkdev, staging_buffer_mem, nullptr);
 	}
 }
 
