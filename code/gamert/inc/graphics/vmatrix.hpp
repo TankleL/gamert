@@ -51,12 +51,12 @@ public:
 	}
 
 public:
-	DataType& operator[](size_t m)
+	VVector<DataType, M>& operator[](size_t m)
 	{
 		return _data[m];
 	}
 
-	const DataType& operator[](size_t m) const
+	const VVector<DataType, M>& operator[](size_t m) const
 	{
 		return _data[m];
 	}

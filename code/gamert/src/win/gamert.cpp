@@ -51,7 +51,7 @@ void init_gamert_app(HWND hwnd)
 
 	root->manage_child(quad);
 	g_scene.switch_root_node(root);
-	g_render.set_scene_graph(&g_scene);
+	g_render.bind_scene_graph(&g_scene);
 	g_update_function = render_update;
 }
 
@@ -120,7 +120,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		else
 		{
 			g_update_function();
-			Sleep(100);
+			Sleep(10);
 		}
 	}
 

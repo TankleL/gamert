@@ -3,12 +3,13 @@
 #include "vkutils.hpp"
 #include "vvertex.hpp"
 #include "resourcesmgr.hpp"
+#include "vnode2d.hpp"
 
 using namespace std;
 
 VSceneGraph VKRenderer2d::_dummy_graph;
 
-VKRenderer2d::VKRenderer2d()
+VKRenderer2d::VKRenderer2d(uint32_t max_drawcalls)
 	: _render_pass(VK_NULL_HANDLE)
 	, _graphics_pipeline(VK_NULL_HANDLE)
 	, _graphics_pipeline_layout(VK_NULL_HANDLE)
@@ -18,20 +19,75 @@ VKRenderer2d::VKRenderer2d()
 	, _scene_graph(&_dummy_graph)
 	, _swapchain(nullptr)
 	, _camera(nullptr)
+	, _max_drawcalls(max_drawcalls)
 	, _initialized(false)
-{}
-
-void VKRenderer2d::set_scene_graph(VSceneGraph* graph)
 {
+	_single_dc_marks.resize(max_drawcalls);
+}
+
+void VKRenderer2d::bind_scene_graph(VSceneGraph* graph)
+{
+	unbind_scene_graph();
+
 	if (graph)
+	{
 		_scene_graph = graph;
+		_scene_graph->set_renderer(this);
+	}
 	else
 		_scene_graph = &_dummy_graph;
+}
+
+void VKRenderer2d::unbind_scene_graph()
+{
+	if (_scene_graph)
+	{
+		_scene_graph->set_renderer(nullptr);
+		_scene_graph = nullptr;
+	}
 }
 
 void VKRenderer2d::set_camera(VCamera* camera)
 {
 	_camera = camera;
+}
+
+uint32_t VKRenderer2d::allocate_single_dc_ubo()
+{
+	for (auto i = 0; i < _single_dc_marks.size(); ++i)
+	{
+		if (false == _single_dc_marks[i])
+		{
+			_single_dc_marks[i] = true;
+			return i;
+		}
+	}
+
+	throw std::runtime_error("run out of uniform buffers: _ubuf_single_dc");
+}
+
+void VKRenderer2d::free_single_dc_ubo(uint32_t offset)
+{
+	if (offset < _single_dc_marks.size())
+	{
+		if (_single_dc_marks[offset])
+		{
+			_single_dc_marks[offset] = false;
+		}
+		else
+		{
+			throw std::runtime_error("uniform buffer has been already released: _ubuf_single_dc");
+		}
+	}
+	else
+	{
+		throw std::runtime_error("bad offset: _ubuf_single_dc");
+	}
+}
+
+VKRenderer2d::ubuf_single_dc_t* VKRenderer2d::get_single_dc_ubo(uint32_t offset, int fbo_index) const
+{
+	return ((ubuf_single_dc_t*)_mapped_data_single_dc[fbo_index]) + offset;
 }
 
 void VKRenderer2d::init(VKSwapchain* swapchain)
@@ -48,6 +104,8 @@ void VKRenderer2d::init(VKSwapchain* swapchain)
 		_create_descriptor_set();
 		_create_primary_commandbuffers();
 		_ensure_stable_uniform_data();
+		_reset_single_dc_marks();
+		_scene_graph->create_drawcalls(this);
 		_initialized = true;
 	}
 }
@@ -56,6 +114,7 @@ void VKRenderer2d::unint()
 {
 	if (_initialized)
 	{
+		_scene_graph->destroy_drawcalls();
 		_destroy_primary_commandbuffers();
 		_destroy_descriptor_set();
 		_destroy_descriptor_pool();
@@ -360,8 +419,6 @@ void VKRenderer2d::_create_uniform_buffers()
 	const VkPhysicalDevice	vkphydev	= VKContext::get_instance().get_vulkan_physical_device();
 	int						img_count	= (int)_swapchain->get_vulkan_image_views().size();
 
-	const int MAX_DRAW_CALLS = 1024;
-	
 	const VkDeviceSize size_ubuf_stable = sizeof(_ubuf_stable_t);
 	const VkDeviceSize size_ubuf_single_dc = sizeof(_ubuf_combined_dc_t);
 	const VkDeviceSize size_ubuf_combined_dc = sizeof(_ubuf_combined_dc_t);
@@ -371,6 +428,7 @@ void VKRenderer2d::_create_uniform_buffers()
 
 	_ubuf_single_dc.resize(img_count);
 	_ubuf_single_dc_mem.resize(img_count);
+	_mapped_data_single_dc.resize(img_count);
 
 	_ubuf_combined_dc.resize(img_count);
 	_ubuf_combined_dc_mem.resize(img_count);
@@ -400,9 +458,17 @@ void VKRenderer2d::_create_uniform_buffers()
 			_ubuf_single_dc_mem[i],
 			vkdev,
 			vkphydev,
-			size_ubuf_single_dc * MAX_DRAW_CALLS,
+			size_ubuf_single_dc * _max_drawcalls,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		vkMapMemory(
+			vkdev,
+			_ubuf_single_dc_mem[i],
+			0,
+			size_ubuf_single_dc* _max_drawcalls,
+			0,
+			&_mapped_data_single_dc[i]);
 	}
 }
 
@@ -441,6 +507,7 @@ void VKRenderer2d::_destroy_uniform_buffers()
 		}
 		_ubuf_single_dc.clear();
 		_ubuf_single_dc_mem.clear();
+		_mapped_data_single_dc.clear();
 	}
 }
 
@@ -605,7 +672,7 @@ void VKRenderer2d::_create_descriptor_set()
 
 		buffer_infos[UBT_SingleDC].buffer = _ubuf_single_dc[i];
 		buffer_infos[UBT_SingleDC].offset = 0;
-		buffer_infos[UBT_SingleDC].range = sizeof(_ubuf_single_dc_t);
+		buffer_infos[UBT_SingleDC].range = sizeof(ubuf_single_dc_t);
 
 		// writers
 		VkWriteDescriptorSet desc_writes[UBT_Counts];
@@ -716,6 +783,15 @@ void VKRenderer2d::_ensure_stable_uniform_data()
 	}
 }
 
+void VKRenderer2d::_reset_single_dc_marks()
+{
+	for (auto& mark : _single_dc_marks)
+	{
+		mark = false;
+	}
+}
+
+
 void VKRenderer2d::_update_matrices()
 {
 
@@ -767,12 +843,13 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 		VK_SUBPASS_CONTENTS_INLINE);
 
 	// draw here
-	VNode::render_param_t render_param = {};
+	VNode2d::render_param2d_t render_param = {};
 	render_param.cmd				= pri_cmd;
 	render_param.pipeline			= _graphics_pipeline;
 	render_param.pipeline_layout	= _graphics_pipeline_layout;
 	render_param.fbo_index			= img_index;
 	render_param.elapsed			= elapsed;
+	render_param.descset_dynamic	= _desc_dynamic_sets[img_index];
 	
 
 	vkCmdBindDescriptorSets(

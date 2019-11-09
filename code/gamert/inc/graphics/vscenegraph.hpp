@@ -12,11 +12,15 @@ public:
 	virtual ~VSceneGraph();
 
 public:
-	void update(const VNode::render_param_t& param);
-	VNode* switch_root_node(VNode* new_node);
+	void	update(const VNode::render_param_t& param);
+	VNode*	switch_root_node(VNode* new_node);
+	void	create_drawcalls(VKRenderer* renderer);
+	void	destroy_drawcalls();
+	void	set_renderer(VKRenderer* renderer);
 
 private:
 	VNode*		_root_node;
+	VKRenderer* _renderer;
 
 private:
 	static VNode _dummy_node;

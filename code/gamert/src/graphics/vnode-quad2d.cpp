@@ -1,6 +1,8 @@
 #include "vnode-quad2d.hpp"
 #include "vkutils.hpp"
 #include "vkcontext.hpp"
+#include "vdrawcall2d.hpp"
+#include "vkrenderer2d.hpp"
 
 VNodeQuad2d::VNodeQuad2d()
 	: _vertices({})
@@ -172,39 +174,66 @@ void VNodeQuad2d::_destroy_buffers()
 
 void VNodeQuad2d::on_render(const render_param_t& param)
 {
+	const render_param2d_t& param2d = static_cast<const render_param2d_t&>(param);
+	const VDrawCall2d* dc2d = static_cast<const VDrawCall2d*>(_drawcall);
+	const VKRenderer2d* rdr2d = static_cast<const VKRenderer2d*>(_drawcall->get_renderer());
+
 	vkCmdBindPipeline(
-		param.cmd,
+		param2d.cmd,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
-		param.pipeline);
+		param2d.pipeline);
 
 	VkBuffer		vbuffers[] = { _vbuffer };
 	VkDeviceSize	offsets[] = { 0 };
 
 	vkCmdBindVertexBuffers(
-		param.cmd,
+		param2d.cmd,
 		0,
 		1,
 		vbuffers,
 		offsets);
 
 	vkCmdBindIndexBuffer(
-		param.cmd,
+		param2d.cmd,
 		_ibuffer,
 		0,
 		VK_INDEX_TYPE_UINT16);
 
-	//vkCmdBindDescriptorSets(
-	//	param.cmd,
-	//	VK_PIPELINE_BIND_POINT_GRAPHICS,
-	//	param.renderer->get_vulkan_pipeline_layout(),
-	//	0,
-	//	1,
-	//	&param.renderer->get_vulkan_descriptor_set().at(param.fbo_index),
-	//	0, 
-	//	nullptr);
+	static bool go_right = true;
+	static float moved = 0.f;
+
+	if(go_right)
+	{
+		if (moved > 100.f)
+			go_right = false;
+		moved += 1.5f;
+	}
+	else
+	{
+		if (moved < -100.f)
+			go_right = true;
+		moved -= 1.5f;
+	}
+
+	uint32_t ubo_offsets[] = { dc2d->get_single_dc_ubo_offset() };
+	VKRenderer2d::ubuf_single_dc_t* ubo_data = rdr2d->get_single_dc_ubo(
+		ubo_offsets[0],
+		param2d.fbo_index);
+
+	ubo_data->world[0][0] = moved;
+
+	vkCmdBindDescriptorSets(
+		param2d.cmd,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		param2d.pipeline_layout,
+		1,
+		1,
+		&param2d.descset_dynamic,
+		1,
+		ubo_offsets);
 
 	vkCmdDrawIndexed(
-		param.cmd,
+		param2d.cmd,
 		(uint32_t)_indices.size(),
 		1,
 		0,
@@ -212,3 +241,12 @@ void VNodeQuad2d::on_render(const render_param_t& param)
 		0);
 }
 
+void VNodeQuad2d::on_create_drawcall(VKRenderer* renderer)
+{
+	_drawcall = new VDrawCall2d(renderer);
+}
+
+void VNodeQuad2d::on_destroy_drawcall()
+{
+	GRT_SAFE_DELETE(_drawcall);
+}

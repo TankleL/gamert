@@ -9,7 +9,13 @@
 class VKRenderer2d : public VKRenderer
 {
 public:
-	VKRenderer2d();
+	typedef struct _st_ubuf_single_dc
+	{
+		alignas(16)	VFMat3		world;
+	} ubuf_single_dc_t;
+
+public:
+	VKRenderer2d(uint32_t max_drawcalls = 1024);
 
 public:
 	virtual void		init(VKSwapchain* swapchain) override;
@@ -17,19 +23,18 @@ public:
 	virtual void		update(float elapsed) override;
 
 public:
-	void set_scene_graph(VSceneGraph* graph);
-	void set_camera(VCamera* camera);
+	void				bind_scene_graph(VSceneGraph* graph);
+	void				unbind_scene_graph();
+	void				set_camera(VCamera* camera);
+	uint32_t			allocate_single_dc_ubo();
+	void				free_single_dc_ubo(uint32_t offset);
+	ubuf_single_dc_t*	get_single_dc_ubo(uint32_t offset, int fbo_index) const;
 
 private:
 	typedef struct _st_ubuf_stable
 	{
-		VFVec2		extent;
+		VFVec2					extent;
 	} _ubuf_stable_t;
-
-	typedef struct _st_ubuf_single_dc
-	{
-		alignas(16)	VFMat3		world;
-	} _ubuf_single_dc_t;
 
 	typedef struct _st_ubuf_combined_dc
 	{
@@ -46,7 +51,7 @@ private:
 	void _create_descriptor_set();
 	void _create_primary_commandbuffers();
 	void _ensure_stable_uniform_data();
-	
+	void _reset_single_dc_marks();
 
 	void _destroy_render_pass();
 	void _destroy_framebuffers();
@@ -90,9 +95,12 @@ private:
 	VkDescriptorSetLayout			_desc_dynamic_sl;		// vulkan descriptor set layout
 
 private:
+	std::vector<void*>				_mapped_data_single_dc;
+	std::vector<bool>				_single_dc_marks;		// manage the allocation of single dc buffer
 	VSceneGraph*					_scene_graph;
 	VKSwapchain*					_swapchain;
 	VCamera*						_camera;
+	const uint32_t					_max_drawcalls;
 	bool							_initialized;
 
 private:
