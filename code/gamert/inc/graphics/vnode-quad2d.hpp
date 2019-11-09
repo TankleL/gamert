@@ -1,13 +1,13 @@
 #pragma once
 #include "pre-req.hpp"
-#include "vnode.hpp"
+#include "vnode2d.hpp"
 #include "vvertex.hpp"
 
-class VNodeQuad : public VNode
+class VNodeQuad2d : public VNode2d
 {
 public:
-	VNodeQuad();
-	virtual ~VNodeQuad();
+	VNodeQuad2d();
+	virtual ~VNodeQuad2d();
 
 public:
 	virtual void on_init() override;

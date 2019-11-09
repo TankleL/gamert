@@ -1,20 +1,29 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 0) uniform UniformBufferObject
+layout(binding = 0) uniform u_stable_info
 {
-	mat4	model;
-	mat4	view;
-	mat4	proj;
-} ubo;
+	vec2	extent;
+} stable_info;
 
-layout(location = 0) in vec2 inPosition;
-layout(location = 1) in vec3 inColor;
+layout(binding = 1) uniform u_combined_drawcall_info
+{
+	mat3	view;
+} combined_drawcall_info;
 
-layout(location = 0) out vec3 fragColor;
+layout(binding = 2) uniform u_single_drawcall_info
+{
+	mat3	world;
+} single_drawcall_info;
+
+layout(location = 0) in vec2 in_pos;
+layout(location = 1) in vec3 in_clr;
+
+layout(location = 0) out vec3 out_clr;
 
 void main()
 {
-    gl_Position = vec4(inPosition, 0.0, 1.0);
-    fragColor = inColor;
+	vec2 real_pos = in_pos / stable_info.extent;
+    gl_Position = vec4(real_pos, 0.0, 1.0);
+    out_clr = in_clr;
 }

@@ -1,8 +1,8 @@
-#include "vnode-quad.hpp"
+#include "vnode-quad2d.hpp"
 #include "vkutils.hpp"
 #include "vkcontext.hpp"
 
-VNodeQuad::VNodeQuad()
+VNodeQuad2d::VNodeQuad2d()
 	: _vertices({})
 	, _indices({})
 	, _vbuffer(VK_NULL_HANDLE)
@@ -11,33 +11,33 @@ VNodeQuad::VNodeQuad()
 	, _ibuffer_mem(VK_NULL_HANDLE)
 {}
 
-VNodeQuad::~VNodeQuad()
+VNodeQuad2d::~VNodeQuad2d()
 {
 	on_uninit();
 }
 
-void VNodeQuad::on_init()
+void VNodeQuad2d::on_init()
 {
 	_create_vertex_buffer();
 	_create_index_buffer();
 }
 
-void VNodeQuad::on_uninit()
+void VNodeQuad2d::on_uninit()
 {
 	_destroy_buffers();
 }
 
-void VNodeQuad::set_vertices(const std::array<VVertex2DRGB, 4>& vertices)
+void VNodeQuad2d::set_vertices(const std::array<VVertex2DRGB, 4>& vertices)
 {
 	_vertices = vertices;
 }
 
-void VNodeQuad::set_indices(const std::array<uint16_t, 6>& indices)
+void VNodeQuad2d::set_indices(const std::array<uint16_t, 6>& indices)
 {
 	_indices = indices;
 }
 
-void VNodeQuad::_create_vertex_buffer()
+void VNodeQuad2d::_create_vertex_buffer()
 {
 	// get context factors
 	const VkDevice& vkdev = VKContext::get_instance().get_vulkan_device();
@@ -94,7 +94,7 @@ void VNodeQuad::_create_vertex_buffer()
 	vkFreeMemory(vkdev, staging_buffer_mem, nullptr);
 }
 
-void VNodeQuad::_create_index_buffer()
+void VNodeQuad2d::_create_index_buffer()
 {
 	// get context factors
 	const VkDevice& vkdev = VKContext::get_instance().get_vulkan_device();
@@ -151,7 +151,7 @@ void VNodeQuad::_create_index_buffer()
 	vkFreeMemory(vkdev, staging_buffer_mem, nullptr);
 }
 
-void VNodeQuad::_destroy_buffers()
+void VNodeQuad2d::_destroy_buffers()
 {
 	const VkDevice& vkdev = VKContext::get_instance().get_vulkan_device();
 
@@ -170,9 +170,12 @@ void VNodeQuad::_destroy_buffers()
 	}
 }
 
-void VNodeQuad::on_render(const render_param_t& param)
+void VNodeQuad2d::on_render(const render_param_t& param)
 {
-	vkCmdBindPipeline(param.cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, param.renderer->get_vulkan_pipeline());
+	vkCmdBindPipeline(
+		param.cmd,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		param.pipeline);
 
 	VkBuffer		vbuffers[] = { _vbuffer };
 	VkDeviceSize	offsets[] = { 0 };

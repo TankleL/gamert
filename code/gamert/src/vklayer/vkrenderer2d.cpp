@@ -12,10 +12,12 @@ VKRenderer2d::VKRenderer2d()
 	: _render_pass(VK_NULL_HANDLE)
 	, _graphics_pipeline(VK_NULL_HANDLE)
 	, _graphics_pipeline_layout(VK_NULL_HANDLE)
-	, _descriptor_pool(VK_NULL_HANDLE)
-	, _descriptor_set_layout(VK_NULL_HANDLE)
+	, _desc_pool(VK_NULL_HANDLE)
+	, _desc_static_sl(VK_NULL_HANDLE)
+	, _desc_dynamic_sl(VK_NULL_HANDLE)
 	, _scene_graph(&_dummy_graph)
 	, _swapchain(nullptr)
+	, _camera(nullptr)
 	, _initialized(false)
 {}
 
@@ -25,6 +27,11 @@ void VKRenderer2d::set_scene_graph(VSceneGraph* graph)
 		_scene_graph = graph;
 	else
 		_scene_graph = &_dummy_graph;
+}
+
+void VKRenderer2d::set_camera(VCamera* camera)
+{
+	_camera = camera;
 }
 
 void VKRenderer2d::init(VKSwapchain* swapchain)
@@ -40,6 +47,7 @@ void VKRenderer2d::init(VKSwapchain* swapchain)
 		_create_descriptor_pool();
 		_create_descriptor_set();
 		_create_primary_commandbuffers();
+		_ensure_stable_uniform_data();
 		_initialized = true;
 	}
 }
@@ -58,21 +66,6 @@ void VKRenderer2d::unint()
 		_destroy_render_pass();
 		_initialized = false;
 	}
-}
-
-VkPipeline VKRenderer2d::get_vulkan_pipeline() const
-{
-	return _graphics_pipeline;
-}
-
-VkPipelineLayout VKRenderer2d::get_vulkan_pipeline_layout() const
-{
-	return _graphics_pipeline_layout;
-}
-
-const std::vector<VkDescriptorSet>& VKRenderer2d::get_vulkan_descriptor_set() const
-{
-	return _descriptor_sets;
 }
 
 void VKRenderer2d::_create_render_pass()
@@ -278,10 +271,11 @@ void VKRenderer2d::_create_graphics_pipeline()
 	color_blending_info.blendConstants[2] = 0.0f;
 	color_blending_info.blendConstants[3] = 0.0f;
 
+	VkDescriptorSetLayout dslayouts[] = { _desc_static_sl, _desc_dynamic_sl };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeline_layout_info.setLayoutCount = 1;
-	pipeline_layout_info.pSetLayouts = &_descriptor_set_layout;
+	pipeline_layout_info.setLayoutCount = 2;
+	pipeline_layout_info.pSetLayouts = dslayouts;
 
 	GRT_CHECK(
 		VK_SUCCESS == vkCreatePipelineLayout(
@@ -362,22 +356,51 @@ void VKRenderer2d::_destroy_primary_commandbuffers()
 
 void VKRenderer2d::_create_uniform_buffers()
 {
-	const VkDevice			vkdev = VKContext::get_instance().get_vulkan_device();
-	const VkPhysicalDevice	vkphydev = VKContext::get_instance().get_vulkan_physical_device();
-	int img_count = (int)_swapchain->get_vulkan_image_views().size();
-	VkDeviceSize buffer_size = sizeof(_uniform_buffer_object_t);
+	const VkDevice			vkdev		= VKContext::get_instance().get_vulkan_device();
+	const VkPhysicalDevice	vkphydev	= VKContext::get_instance().get_vulkan_physical_device();
+	int						img_count	= (int)_swapchain->get_vulkan_image_views().size();
 
-	_uniform_buffers.resize(img_count);
-	_uniform_buffer_mems.resize(img_count);
+	const int MAX_DRAW_CALLS = 1024;
+	
+	const VkDeviceSize size_ubuf_stable = sizeof(_ubuf_stable_t);
+	const VkDeviceSize size_ubuf_single_dc = sizeof(_ubuf_combined_dc_t);
+	const VkDeviceSize size_ubuf_combined_dc = sizeof(_ubuf_combined_dc_t);
+
+	_ubuf_stable.resize(img_count);
+	_ubuf_stable_mem.resize(img_count);
+
+	_ubuf_single_dc.resize(img_count);
+	_ubuf_single_dc_mem.resize(img_count);
+
+	_ubuf_combined_dc.resize(img_count);
+	_ubuf_combined_dc_mem.resize(img_count);
 
 	for (int i = 0; i < img_count; ++i)
 	{
 		VKUtils::create_buffer(
-			_uniform_buffers[i],
-			_uniform_buffer_mems[i],
+			_ubuf_stable[i],
+			_ubuf_stable_mem[i],
 			vkdev,
 			vkphydev,
-			buffer_size,
+			size_ubuf_stable,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		VKUtils::create_buffer(
+			_ubuf_combined_dc[i],
+			_ubuf_combined_dc_mem[i],
+			vkdev,
+			vkphydev,
+			size_ubuf_combined_dc,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		VKUtils::create_buffer(
+			_ubuf_single_dc[i],
+			_ubuf_single_dc_mem[i],
+			vkdev,
+			vkphydev,
+			size_ubuf_single_dc * MAX_DRAW_CALLS,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	}
@@ -385,85 +408,142 @@ void VKRenderer2d::_create_uniform_buffers()
 
 void VKRenderer2d::_destroy_uniform_buffers()
 {
-	const size_t	ubo_count = _uniform_buffers.size();
 	const VkDevice	vkdev = VKContext::get_instance().get_vulkan_device();
 
-	for (size_t i = 0; i < ubo_count; ++i)
 	{
-		vkDestroyBuffer(vkdev, _uniform_buffers[i], nullptr);
-		vkFreeMemory(vkdev, _uniform_buffer_mems[i], nullptr);
+		const auto cnt = _ubuf_stable.size();
+		for (size_t i = 0; i < cnt; ++i)
+		{
+			vkDestroyBuffer(vkdev, _ubuf_stable[i], nullptr);
+			vkFreeMemory(vkdev, _ubuf_stable_mem[i], nullptr);
+		}
+		_ubuf_stable.clear();
+		_ubuf_stable_mem.clear();
 	}
 
-	_uniform_buffers.clear();
-	_uniform_buffer_mems.clear();
+	{
+		const auto cnt = _ubuf_combined_dc.size();
+		for (size_t i = 0; i < cnt; ++i)
+		{
+			vkDestroyBuffer(vkdev, _ubuf_combined_dc[i], nullptr);
+			vkFreeMemory(vkdev, _ubuf_combined_dc_mem[i], nullptr);
+		}
+		_ubuf_combined_dc.clear();
+		_ubuf_combined_dc_mem.clear();
+	}
 }
 
 void VKRenderer2d::_create_descriptor_pool()
 {
-	VkDescriptorPoolSize pool_size_info = {};
-	pool_size_info.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	pool_size_info.descriptorCount = static_cast<uint32_t>(
+	const uint32_t img_count = static_cast<uint32_t>(
 		_swapchain->get_vulkan_image_views().size());
+	VkDescriptorPoolSize psi[UBT_Counts];
+	memset(psi, 0, sizeof(psi));
+
+	psi[UBT_StableInfo].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	psi[UBT_StableInfo].descriptorCount = img_count;
+
+	psi[UBT_CombinedDC].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	psi[UBT_CombinedDC].descriptorCount = img_count;
+
+	psi[UBT_SingleDC].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	psi[UBT_SingleDC].descriptorCount = img_count;
 
 	VkDescriptorPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	pool_info.poolSizeCount = 1;
-	pool_info.pPoolSizes = &pool_size_info;
+	pool_info.poolSizeCount = UBT_Counts;
+	pool_info.pPoolSizes = psi;
 	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	pool_info.maxSets = static_cast<uint32_t>(
-		_swapchain->get_vulkan_image_views().size());
+	pool_info.maxSets = img_count * 2;		// for static and dynamic sets
 
 	GRT_CHECK(
 		VK_SUCCESS == vkCreateDescriptorPool(
 			VKContext::get_instance().get_vulkan_device(),
 			&pool_info,
 			nullptr,
-			&_descriptor_pool),
+			&_desc_pool),
 		"failed to create descriptor pool.");
 }
 
 void VKRenderer2d::_destroy_descriptor_pool()
 {
-	if (VK_NULL_HANDLE != _descriptor_pool)
+	if (VK_NULL_HANDLE != _desc_pool)
 	{
 		vkDestroyDescriptorPool(
 			VKContext::get_instance().get_vulkan_device(),
-			_descriptor_pool,
+			_desc_pool,
 			nullptr);
 	}
 }
 
 void VKRenderer2d::_create_descriptor_set_layout()
 {
-	VkDescriptorSetLayoutBinding layout_binding = {};
-	layout_binding.binding = 0;
-	layout_binding.descriptorCount = 1;
-	layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	layout_binding.pImmutableSamplers = nullptr;
-	layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	VkDescriptorSetLayoutBinding dlbs[UBT_Counts];	// descriptor-set layout binding
+	memset(dlbs, 0, sizeof(dlbs));
 
-	VkDescriptorSetLayoutCreateInfo layout_info = {};
-	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layout_info.bindingCount = 1;
-	layout_info.pBindings = &layout_binding;
+	dlbs[UBT_StableInfo].binding = UBT_StableInfo;		// 0
+	dlbs[UBT_StableInfo].descriptorCount = 1;
+	dlbs[UBT_StableInfo].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	dlbs[UBT_StableInfo].pImmutableSamplers = nullptr;
+	dlbs[UBT_StableInfo].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	dlbs[UBT_CombinedDC].binding = UBT_CombinedDC;		// 1
+	dlbs[UBT_CombinedDC].descriptorCount = 1;
+	dlbs[UBT_CombinedDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	dlbs[UBT_CombinedDC].pImmutableSamplers = nullptr;
+	dlbs[UBT_CombinedDC].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	dlbs[UBT_SingleDC].binding = UBT_SingleDC;			// 2
+	dlbs[UBT_SingleDC].descriptorCount = 1;
+	dlbs[UBT_SingleDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	dlbs[UBT_SingleDC].pImmutableSamplers = nullptr;
+	dlbs[UBT_SingleDC].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	VkDescriptorSetLayoutCreateInfo layouts_info = {};
+	layouts_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layouts_info.bindingCount = UBT_Counts - 1;
+	layouts_info.pBindings = dlbs;
 
 	GRT_CHECK(
 		VK_SUCCESS == vkCreateDescriptorSetLayout(
 			VKContext::get_instance().get_vulkan_device(),
-			&layout_info,
+			&layouts_info,
 			nullptr,
-			&_descriptor_set_layout),
+			&_desc_static_sl),
+		"failed to create descriptor set layout.");
+
+	layouts_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layouts_info.bindingCount = 1;
+	layouts_info.pBindings = &dlbs[UBT_SingleDC];
+
+
+	GRT_CHECK(
+		VK_SUCCESS == vkCreateDescriptorSetLayout(
+			VKContext::get_instance().get_vulkan_device(),
+			&layouts_info,
+			nullptr,
+			&_desc_dynamic_sl),
 		"failed to create descriptor set layout.");
 }
 
 void VKRenderer2d::_destroy_descriptor_set_layout()
 {
-	if (VK_NULL_HANDLE != _descriptor_set_layout)
+	if (VK_NULL_HANDLE != _desc_static_sl)
 	{
 		vkDestroyDescriptorSetLayout(
 			VKContext::get_instance().get_vulkan_device(),
-			_descriptor_set_layout,
+			_desc_static_sl,
 			nullptr);
+		_desc_static_sl = VK_NULL_HANDLE;
+	}
+
+	if (VK_NULL_HANDLE != _desc_dynamic_sl)
+	{
+		vkDestroyDescriptorSetLayout(
+			VKContext::get_instance().get_vulkan_device(),
+			_desc_dynamic_sl,
+			nullptr);
+		_desc_dynamic_sl = VK_NULL_HANDLE;
 	}
 }
 
@@ -473,42 +553,81 @@ void VKRenderer2d::_create_descriptor_set()
 
 	std::vector<VkDescriptorSetLayout> layouts(
 		img_count,
-		_descriptor_set_layout);
+		_desc_static_sl);
 	VkDescriptorSetAllocateInfo alloc_info = {};
 	alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	alloc_info.descriptorPool = _descriptor_pool;
+	alloc_info.descriptorPool = _desc_pool;
 	alloc_info.descriptorSetCount = static_cast<uint32_t>(img_count);
 	alloc_info.pSetLayouts = layouts.data();
 
-	_descriptor_sets.resize(img_count);
-
+	_desc_static_sets.resize(img_count);
 	GRT_CHECK(
 		VK_SUCCESS == vkAllocateDescriptorSets(
 			VKContext::get_instance().get_vulkan_device(),
 			&alloc_info,
-			_descriptor_sets.data()),
+			_desc_static_sets.data()),
+		"failed to allocate descriptor sets.");
+
+	layouts.assign(img_count, _desc_dynamic_sl);
+	alloc_info.pSetLayouts = layouts.data();
+	_desc_dynamic_sets.resize(img_count);
+	GRT_CHECK(
+		VK_SUCCESS == vkAllocateDescriptorSets(
+			VKContext::get_instance().get_vulkan_device(),
+			&alloc_info,
+			_desc_dynamic_sets.data()),
 		"failed to allocate descriptor sets.");
 
 	for (size_t i = 0; i < img_count; ++i)
 	{
-		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = _uniform_buffers[i];
-		buffer_info.offset = 0;
-		buffer_info.range = sizeof(_uniform_buffer_object_t);
+		// uniform buffers information
+		VkDescriptorBufferInfo buffer_infos[UBT_Counts];
+		memset(buffer_infos, 0, sizeof(buffer_infos));
 
-		VkWriteDescriptorSet descriptor_write = {};
-		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_write.dstSet = _descriptor_sets[i];
-		descriptor_write.dstBinding = 0;
-		descriptor_write.dstArrayElement = 0;
-		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_write.descriptorCount = 1;
-		descriptor_write.pBufferInfo = &buffer_info;
+		buffer_infos[UBT_StableInfo].buffer = _ubuf_stable[i];
+		buffer_infos[UBT_StableInfo].offset = 0;
+		buffer_infos[UBT_StableInfo].range = sizeof(_ubuf_stable_t);
+
+		buffer_infos[UBT_CombinedDC].buffer = _ubuf_combined_dc[i];
+		buffer_infos[UBT_CombinedDC].offset = 0;
+		buffer_infos[UBT_CombinedDC].range = sizeof(_ubuf_combined_dc_t);
+
+		buffer_infos[UBT_SingleDC].buffer = _ubuf_single_dc[i];
+		buffer_infos[UBT_SingleDC].offset = 0;
+		buffer_infos[UBT_SingleDC].range = sizeof(_ubuf_single_dc_t);
+
+		// writers
+		VkWriteDescriptorSet desc_writes[UBT_Counts];
+		memset(desc_writes, 0, sizeof(desc_writes));
+
+		desc_writes[UBT_StableInfo].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		desc_writes[UBT_StableInfo].dstSet = _desc_static_sets[i];
+		desc_writes[UBT_StableInfo].dstBinding = UBT_StableInfo;
+		desc_writes[UBT_StableInfo].dstArrayElement = 0;
+		desc_writes[UBT_StableInfo].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		desc_writes[UBT_StableInfo].descriptorCount = 1;
+		desc_writes[UBT_StableInfo].pBufferInfo = &buffer_infos[UBT_StableInfo];
+
+		desc_writes[UBT_CombinedDC].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		desc_writes[UBT_CombinedDC].dstSet = _desc_static_sets[i];
+		desc_writes[UBT_CombinedDC].dstBinding = 0;
+		desc_writes[UBT_CombinedDC].dstArrayElement = UBT_CombinedDC;
+		desc_writes[UBT_CombinedDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		desc_writes[UBT_CombinedDC].descriptorCount = 1;
+		desc_writes[UBT_CombinedDC].pBufferInfo = &buffer_infos[UBT_CombinedDC];
+
+		desc_writes[UBT_SingleDC].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		desc_writes[UBT_SingleDC].dstSet = _desc_dynamic_sets[i];
+		desc_writes[UBT_SingleDC].dstBinding = UBT_SingleDC;
+		desc_writes[UBT_SingleDC].dstArrayElement = 0;
+		desc_writes[UBT_SingleDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		desc_writes[UBT_SingleDC].descriptorCount = 1;
+		desc_writes[UBT_SingleDC].pBufferInfo = &buffer_infos[UBT_SingleDC];
 
 		vkUpdateDescriptorSets(
 			VKContext::get_instance().get_vulkan_device(),
-			1,
-			&descriptor_write,
+			UBT_Counts,
+			desc_writes,
 			0,
 			nullptr);
 	}
@@ -516,15 +635,57 @@ void VKRenderer2d::_create_descriptor_set()
 
 void VKRenderer2d::_destroy_descriptor_set()
 {
-	if(_descriptor_sets.size() > 0)
+	if(_desc_static_sets.size() > 0)
 	{
 		vkFreeDescriptorSets(
 			VKContext::get_instance().get_vulkan_device(),
-			_descriptor_pool,
-			(uint32_t)_descriptor_sets.size(),
-			_descriptor_sets.data());
+			_desc_pool,
+			(uint32_t)_desc_static_sets.size(),
+			_desc_static_sets.data());
 	}
-	_descriptor_sets.clear();
+	_desc_static_sets.clear();
+
+	if (_desc_dynamic_sets.size() > 0)
+	{
+		vkFreeDescriptorSets(
+			VKContext::get_instance().get_vulkan_device(),
+			_desc_pool,
+			(uint32_t)_desc_dynamic_sets.size(),
+			_desc_dynamic_sets.data());
+	}
+	_desc_dynamic_sets.clear();
+}
+
+void VKRenderer2d::_ensure_stable_uniform_data()
+{
+	const VkDevice& vkdev =
+		VKContext::get_instance().get_vulkan_device();
+	const VkExtent2D& vkext = 
+		_swapchain->get_vulkan_extent();
+	for (const auto& mm : _ubuf_stable_mem)
+	{
+		_ubuf_stable_t ubo;
+		ubo.extent[0] = (float)vkext.width;
+		ubo.extent[1] = (float)vkext.height;
+
+		void* data = nullptr;
+		vkMapMemory(
+			vkdev,
+			mm,
+			0,
+			sizeof(ubo),
+			0,
+			&data);
+
+		memcpy(data, &ubo, sizeof(ubo));
+
+		vkUnmapMemory(vkdev, mm);
+	}
+}
+
+void VKRenderer2d::_update_matrices()
+{
+
 }
 
 
@@ -537,10 +698,12 @@ void VKRenderer2d::_destroy_descriptor_set()
 */
 void VKRenderer2d::_update_commands(float elapsed, int img_index)
 {
+	const VkCommandBuffer& pri_cmd = _primary_cmds[img_index];
+
 	// reset the primary command buffer
 	GRT_CHECK(
 		VK_SUCCESS == vkResetCommandBuffer(
-			_primary_cmds[img_index],
+			pri_cmd,
 			0),
 		"failed to reset the primary command buffer");
 
@@ -549,7 +712,7 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 	cmd_beg_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 	GRT_CHECK(
 		VK_SUCCESS == vkBeginCommandBuffer(
-			_primary_cmds[img_index],
+			pri_cmd,
 			&cmd_beg_info),
 		"failed to begin recording the primary commands");
 
@@ -566,29 +729,47 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 	render_pass_info.pClearValues = &clear_clr;
 
 	vkCmdBeginRenderPass(
-		_primary_cmds[img_index],
+		pri_cmd,
 		&render_pass_info,
 		VK_SUBPASS_CONTENTS_INLINE);
 
 	// draw here
-	_scene_graph->update(this, _primary_cmds[img_index], img_index, elapsed);
+	VNode::render_param_t render_param = {};
+	render_param.cmd				= pri_cmd;
+	render_param.pipeline			= _graphics_pipeline;
+	render_param.pipeline_layout	= _graphics_pipeline_layout;
+	render_param.fbo_index			= img_index;
+	render_param.elapsed			= elapsed;
+	
 
 	vkCmdBindDescriptorSets(
-		_primary_cmds[img_index],
+		pri_cmd,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
 		_graphics_pipeline_layout,
 		0,
 		1,
-		&_descriptor_sets[img_index],
+		&_desc_static_sets[img_index],
 		0, 
 		nullptr);
 
+	//vkCmdBindDescriptorSets(
+	//	pri_cmd,
+	//	VK_PIPELINE_BIND_POINT_GRAPHICS,
+	//	_graphics_pipeline_layout,
+	//	0,
+	//	1,
+	//	&_desc_dynamic_sets[img_index],
+	//	1,
+	//	0);
+
+	_scene_graph->update(render_param);
+
 	// end render pass
-	vkCmdEndRenderPass(_primary_cmds[img_index]);
+	vkCmdEndRenderPass(pri_cmd);
 
 	// end recording commands
 	GRT_CHECK(
-		VK_SUCCESS == vkEndCommandBuffer(_primary_cmds[img_index]),
+		VK_SUCCESS == vkEndCommandBuffer(pri_cmd),
 		"failed to end recording the primary commands");
 }
 

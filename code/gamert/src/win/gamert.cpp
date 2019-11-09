@@ -4,7 +4,7 @@
 #include "vkcontext.hpp"
 #include "vkrenderer2d.hpp"
 #include "vscenegraph.hpp"
-#include "vnode-quad.hpp"
+#include "vnode-quad2d.hpp"
 #include "vmatrix.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -37,19 +37,19 @@ void init_gamert_app(HWND hwnd)
 
 	VNode* root = new VNode();
 	root->set_name("root");
-	VNodeQuad* quad = new VNodeQuad();
+	VNodeQuad2d* quad = new VNodeQuad2d();
 	{
 		std::array<VVertex2DRGB, 4> vertices;
-		vertices[0] = VVertex2DRGB(VFVec2({ -0.5f, -0.5f }), VFVec3({ 1.0f, 0.0f, 0.0f }));
-		vertices[1] = VVertex2DRGB(VFVec2({ 0.5f, -0.5f }), VFVec3({ 0.0f, 1.0f, 0.0f }));
-		vertices[2] = VVertex2DRGB(VFVec2({ 0.5f, 0.5f }), VFVec3({ 0.0f, 0.0f, 1.0f }));
-		vertices[3] = VVertex2DRGB(VFVec2({ -0.5f, 0.5f }), VFVec3({ 1.0f, 1.0f, 1.0f }));
+		vertices[0] = VVertex2DRGB(VFVec2({ -100.f, -100.f }), VFVec3({ 0.9f, 0.5f, 0.3f }));
+		vertices[1] = VVertex2DRGB(VFVec2({ 100.f, -100.f }), VFVec3({ 0.3f, 0.9f, 0.5f }));
+		vertices[2] = VVertex2DRGB(VFVec2({ 100.f, 100.f }), VFVec3({ 0.5f, 0.3f, 0.9f }));
+		vertices[3] = VVertex2DRGB(VFVec2({ -100.f, 100.f }), VFVec3({ 0.3f, 0.9f, 1.5f }));
 		
 		quad->set_vertices(vertices);
 		quad->set_indices({ 0, 1, 2, 2, 3, 0 });
 	}
 
-	root->attach_child(quad);
+	root->manage_child(quad);
 	g_scene.switch_root_node(root);
 	g_render.set_scene_graph(&g_scene);
 	g_update_function = render_update;

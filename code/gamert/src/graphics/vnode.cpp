@@ -25,7 +25,7 @@ std::string VNode::get_name() const
 	return _name;
 }
 
-void VNode::attach_child(VNode* child)
+void VNode::manage_child(VNode* child)
 {
 	child->_parent = this;
 	_children.push_back(child);
