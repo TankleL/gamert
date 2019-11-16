@@ -63,7 +63,7 @@ public:
 	}
 
 private:
-	std::array<DataType, rank> _data;
+	alignas(16) std::array<DataType, rank> _data;
 };
 
 

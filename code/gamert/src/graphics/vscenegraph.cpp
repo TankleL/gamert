@@ -28,7 +28,7 @@ VNode* VSceneGraph::switch_root_node(VNode* new_node)
 	old_node->uninit();
 	old_node->destroy_drawcall();
 
-	new_node->init();
+	new_node->init(this);
 	_root_node = new_node;
 
 	if (_renderer)

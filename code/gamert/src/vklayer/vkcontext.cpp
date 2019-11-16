@@ -142,6 +142,9 @@ void VKContext::init(
 			nullptr,
 			&_vkcmdpool),
 		"failed to create command pool.");
+
+	// get basic infos
+	vkGetPhysicalDeviceProperties(_device->get_vulkan_physical_device(), &_phydev_prop);
 }
 
 void VKContext::destroy()

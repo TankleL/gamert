@@ -3,7 +3,7 @@
 #include "vkapp.hpp"
 #include "vkcontext.hpp"
 #include "vkrenderer2d.hpp"
-#include "vscenegraph.hpp"
+#include "vscenegraph2d.hpp"
 #include "vnode-quad2d.hpp"
 #include "vmatrix.hpp"
 
@@ -12,7 +12,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 typedef void(*update_frame_fnp_t)(void);
 
 VKRenderer2d	g_render;
-VSceneGraph		g_scene;
+VSceneGraph2d	g_scene;
 
 void dummy_update()
 {}
@@ -37,19 +37,29 @@ void init_gamert_app(HWND hwnd)
 
 	VNode* root = new VNode();
 	root->set_name("root");
-	VNodeQuad2d* quad = new VNodeQuad2d();
+
 	{
-		std::array<VVertex2DRGB, 4> vertices;
-		vertices[0] = VVertex2DRGB(VFVec2({ -100.f, -100.f }), VFVec3({ 0.9f, 0.5f, 0.3f }));
-		vertices[1] = VVertex2DRGB(VFVec2({ 100.f, -100.f }), VFVec3({ 0.3f, 0.9f, 0.5f }));
-		vertices[2] = VVertex2DRGB(VFVec2({ 100.f, 100.f }), VFVec3({ 0.5f, 0.3f, 0.9f }));
-		vertices[3] = VVertex2DRGB(VFVec2({ -100.f, 100.f }), VFVec3({ 0.3f, 0.9f, 1.5f }));
-		
-		quad->set_vertices(vertices);
-		quad->set_indices({ 0, 1, 2, 2, 3, 0 });
+		VNodeQuad2d* quad = new VNodeQuad2d();
+		quad->set_poisition(VFVec3({ 300.0f, 0.0f, 0.f }));
+		root->manage_child(quad);
 	}
 
-	root->manage_child(quad);
+	{
+		VNodeQuad2d* quad = new VNodeQuad2d();
+		quad->set_poisition(VFVec3({ -300.0f, 0.0f, 0.f }));
+		root->manage_child(quad);
+	}
+
+	{
+		VNodeQuad2d* quad = new VNodeQuad2d();
+		root->manage_child(quad);
+	}
+
+
+	
+
+
+	g_scene.init();
 	g_scene.switch_root_node(root);
 	g_render.bind_scene_graph(&g_scene);
 	g_update_function = render_update;
@@ -57,6 +67,8 @@ void init_gamert_app(HWND hwnd)
 
 void uninit_gamert_app()
 {
+	g_scene.uninit();
+
 	VNode* root = g_scene.switch_root_node(nullptr);
 	delete root;	// root will release all its children.
 
@@ -66,8 +78,6 @@ void uninit_gamert_app()
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
-	VMatrix<float, 4,4> mat;
-
 	// Register the window class.
 	const wchar_t CLASS_NAME[] = L"Gamert Window Class";
 	const wchar_t MAINWIN_NAME[] = L"Gamert View";
@@ -120,7 +130,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		else
 		{
 			g_update_function();
-			Sleep(10);
+			Sleep(30);
 		}
 	}
 

@@ -7,7 +7,7 @@
 
 using namespace std;
 
-VSceneGraph VKRenderer2d::_dummy_graph;
+VSceneGraph2d VKRenderer2d::_dummy_graph;
 
 VKRenderer2d::VKRenderer2d(uint32_t max_drawcalls)
 	: _render_pass(VK_NULL_HANDLE)
@@ -16,6 +16,7 @@ VKRenderer2d::VKRenderer2d(uint32_t max_drawcalls)
 	, _desc_pool(VK_NULL_HANDLE)
 	, _desc_static_sl(VK_NULL_HANDLE)
 	, _desc_dynamic_sl(VK_NULL_HANDLE)
+	, _single_de_buf_alignment(0)
 	, _scene_graph(&_dummy_graph)
 	, _swapchain(nullptr)
 	, _camera(nullptr)
@@ -25,7 +26,7 @@ VKRenderer2d::VKRenderer2d(uint32_t max_drawcalls)
 	_single_dc_marks.resize(max_drawcalls);
 }
 
-void VKRenderer2d::bind_scene_graph(VSceneGraph* graph)
+void VKRenderer2d::bind_scene_graph(VSceneGraph2d* graph)
 {
 	unbind_scene_graph();
 
@@ -87,7 +88,8 @@ void VKRenderer2d::free_single_dc_ubo(uint32_t offset)
 
 VKRenderer2d::ubuf_single_dc_t* VKRenderer2d::get_single_dc_ubo(uint32_t offset, int fbo_index) const
 {
-	return ((ubuf_single_dc_t*)_mapped_data_single_dc[fbo_index]) + offset;
+	char* ptr = (char*)_mapped_data_single_dc[fbo_index] + offset;
+	return (ubuf_single_dc_t*)ptr;
 }
 
 void VKRenderer2d::init(VKSwapchain* swapchain)
@@ -330,6 +332,7 @@ void VKRenderer2d::_create_graphics_pipeline()
 	color_blending_info.blendConstants[2] = 0.0f;
 	color_blending_info.blendConstants[3] = 0.0f;
 
+
 	VkDescriptorSetLayout dslayouts[] = { _desc_static_sl, _desc_dynamic_sl };
 	VkPipelineLayoutCreateInfo pipeline_layout_info = {};
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -426,12 +429,21 @@ void VKRenderer2d::_create_uniform_buffers()
 	_ubuf_stable.resize(img_count);
 	_ubuf_stable_mem.resize(img_count);
 
+	_ubuf_combined_dc.resize(img_count);
+	_ubuf_combined_dc_mem.resize(img_count);
+
 	_ubuf_single_dc.resize(img_count);
 	_ubuf_single_dc_mem.resize(img_count);
 	_mapped_data_single_dc.resize(img_count);
-
-	_ubuf_combined_dc.resize(img_count);
-	_ubuf_combined_dc_mem.resize(img_count);
+	
+	const size_t vk_min_ubo_alignment =
+		VKContext::get_instance().get_vulkan_min_uniform_buffer_offset_alignment();
+	_single_de_buf_alignment = sizeof(ubuf_single_dc_t);
+	if (vk_min_ubo_alignment > 0)
+	{
+		_single_de_buf_alignment =
+			(_single_de_buf_alignment + vk_min_ubo_alignment - 1) & ~(vk_min_ubo_alignment - 1);
+	}
 
 	for (int i = 0; i < img_count; ++i)
 	{
@@ -458,7 +470,7 @@ void VKRenderer2d::_create_uniform_buffers()
 			_ubuf_single_dc_mem[i],
 			vkdev,
 			vkphydev,
-			size_ubuf_single_dc * _max_drawcalls,
+			_single_de_buf_alignment* _max_drawcalls,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
@@ -466,7 +478,7 @@ void VKRenderer2d::_create_uniform_buffers()
 			vkdev,
 			_ubuf_single_dc_mem[i],
 			0,
-			size_ubuf_single_dc* _max_drawcalls,
+			_single_de_buf_alignment * _max_drawcalls,
 			0,
 			&_mapped_data_single_dc[i]);
 	}
@@ -559,19 +571,19 @@ void VKRenderer2d::_create_descriptor_set_layout()
 	VkDescriptorSetLayoutBinding dlbs[UBT_Counts];	// descriptor-set layout binding
 	memset(dlbs, 0, sizeof(dlbs));
 
-	dlbs[UBT_StableInfo].binding = UBT_StableInfo;		// 0
+	dlbs[UBT_StableInfo].binding = 0;		// set = 0, binding = 0
 	dlbs[UBT_StableInfo].descriptorCount = 1;
 	dlbs[UBT_StableInfo].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	dlbs[UBT_StableInfo].pImmutableSamplers = nullptr;
 	dlbs[UBT_StableInfo].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	dlbs[UBT_CombinedDC].binding = UBT_CombinedDC;		// 1
+	dlbs[UBT_CombinedDC].binding = 1;		// set = 0, binding = 1
 	dlbs[UBT_CombinedDC].descriptorCount = 1;
 	dlbs[UBT_CombinedDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	dlbs[UBT_CombinedDC].pImmutableSamplers = nullptr;
 	dlbs[UBT_CombinedDC].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	dlbs[UBT_SingleDC].binding = UBT_SingleDC;			// 2
+	dlbs[UBT_SingleDC].binding = 0;			// set = 1, binding = 0
 	dlbs[UBT_SingleDC].descriptorCount = 1;
 	dlbs[UBT_SingleDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 	dlbs[UBT_SingleDC].pImmutableSamplers = nullptr;
@@ -672,7 +684,7 @@ void VKRenderer2d::_create_descriptor_set()
 
 		buffer_infos[UBT_SingleDC].buffer = _ubuf_single_dc[i];
 		buffer_infos[UBT_SingleDC].offset = 0;
-		buffer_infos[UBT_SingleDC].range = sizeof(ubuf_single_dc_t);
+		buffer_infos[UBT_SingleDC].range = _single_de_buf_alignment;
 
 		// writers
 		VkWriteDescriptorSet desc_writes[UBT_Counts];
@@ -680,7 +692,7 @@ void VKRenderer2d::_create_descriptor_set()
 
 		desc_writes[UBT_StableInfo].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		desc_writes[UBT_StableInfo].dstSet = _desc_static_sets[i];
-		desc_writes[UBT_StableInfo].dstBinding = UBT_StableInfo;
+		desc_writes[UBT_StableInfo].dstBinding = 0;
 		desc_writes[UBT_StableInfo].dstArrayElement = 0;
 		desc_writes[UBT_StableInfo].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		desc_writes[UBT_StableInfo].descriptorCount = 1;
@@ -688,15 +700,15 @@ void VKRenderer2d::_create_descriptor_set()
 
 		desc_writes[UBT_CombinedDC].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		desc_writes[UBT_CombinedDC].dstSet = _desc_static_sets[i];
-		desc_writes[UBT_CombinedDC].dstBinding = 0;
-		desc_writes[UBT_CombinedDC].dstArrayElement = UBT_CombinedDC;
+		desc_writes[UBT_CombinedDC].dstBinding = 1;
+		desc_writes[UBT_CombinedDC].dstArrayElement = 0;
 		desc_writes[UBT_CombinedDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		desc_writes[UBT_CombinedDC].descriptorCount = 1;
 		desc_writes[UBT_CombinedDC].pBufferInfo = &buffer_infos[UBT_CombinedDC];
 
 		desc_writes[UBT_SingleDC].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		desc_writes[UBT_SingleDC].dstSet = _desc_dynamic_sets[i];
-		desc_writes[UBT_SingleDC].dstBinding = UBT_SingleDC;
+		desc_writes[UBT_SingleDC].dstBinding = 0;
 		desc_writes[UBT_SingleDC].dstArrayElement = 0;
 		desc_writes[UBT_SingleDC].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		desc_writes[UBT_SingleDC].descriptorCount = 1;
@@ -851,7 +863,6 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 	render_param.elapsed			= elapsed;
 	render_param.descset_dynamic	= _desc_dynamic_sets[img_index];
 	
-
 	vkCmdBindDescriptorSets(
 		pri_cmd,
 		VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -862,17 +873,31 @@ void VKRenderer2d::_update_commands(float elapsed, int img_index)
 		0, 
 		nullptr);
 
-	//vkCmdBindDescriptorSets(
-	//	pri_cmd,
-	//	VK_PIPELINE_BIND_POINT_GRAPHICS,
-	//	_graphics_pipeline_layout,
-	//	0,
-	//	1,
-	//	&_desc_dynamic_sets[img_index],
-	//	1,
-	//	0);
+	vkCmdBindPipeline(
+		pri_cmd,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		_graphics_pipeline);
 
+
+	VkBuffer		vbuffers[] = { _scene_graph->get_vertex_buffer() };
+	VkDeviceSize	offsets[] = { 0 };
+
+	vkCmdBindVertexBuffers(
+		pri_cmd,
+		0,
+		1,
+		vbuffers,
+		offsets);
+
+	vkCmdBindIndexBuffer(
+		pri_cmd,
+		_scene_graph->get_index_buffer(),
+		0,
+		VK_INDEX_TYPE_UINT16);
+	
 	_scene_graph->update(render_param);
+
+	/*vkCmdDraw(pri_cmd, 1, 1, 0, 0);*/
 
 	// end render pass
 	vkCmdEndRenderPass(pri_cmd);

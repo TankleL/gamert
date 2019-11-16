@@ -3,7 +3,8 @@
 using namespace std;
 
 VNode::VNode()
-	: _parent(nullptr)
+	: _scene(nullptr)
+	, _parent(nullptr)
 	, _drawcall(nullptr)
 	, _visible(true)
 {}
@@ -114,12 +115,20 @@ void VNode::render(const render_param_t& param)
 	}
 }
 
-void VNode::init()
+void VNode::init(VSceneGraph* scene)
 {
-	this->on_init();
-	for (auto& child : _children)
+	GRT_CHECK(
+		nullptr == _scene || scene == _scene,
+		"the incoming scene must be null, new or same.");
+
+	if (scene)
 	{
-		child->init();
+		_scene = scene;
+		this->on_init();
+		for (auto& child : _children)
+		{
+			child->init(scene);
+		}
 	}
 }
 
@@ -130,6 +139,7 @@ void VNode::uninit()
 		child->uninit();
 	}
 	this->on_uninit();
+	_scene = nullptr;
 }
 
 void VNode::create_drawcall(VKRenderer* renderer)

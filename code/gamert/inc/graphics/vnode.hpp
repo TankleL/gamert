@@ -5,6 +5,7 @@
 #include "vdrawcall.hpp"
 
 class VKRenderer;
+class VSceneGraph;
 
 /**
  * @desc visual node
@@ -37,7 +38,7 @@ public:
 	virtual void on_uninit() {};
 
 public:
-	void init();
+	void init(VSceneGraph* scene);
 	void render(const render_param_t& param);
 	void create_drawcall(VKRenderer* renderer);
 	void destroy_drawcall();
@@ -58,6 +59,7 @@ protected:
 private:
 	std::vector<VNode*>		_children;
 	std::string				_name;
+	VSceneGraph*			_scene;
 	VNode*					_parent;
 	bool					_visible;
 };
