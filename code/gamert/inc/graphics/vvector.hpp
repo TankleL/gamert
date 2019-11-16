@@ -62,6 +62,11 @@ public:
 		return _data[index];
 	}
 
+	size_t get_rank() const
+	{
+		return rank;
+	}
+
 private:
 	alignas(16) std::array<DataType, rank> _data;
 };

@@ -31,13 +31,13 @@ void VNodeQuad2d::on_render(const render_param_t& param)
 		ubo_offset,
 		param2d.fbo_index);
 	
-	//if (_dirty_matrix)
+	if (_dirty_clean_bits != _dirty_bits)
 	{
 		memcpy(
 			&(ubo_data->world),
 			&_world,
 			sizeof(VFMat3));
-		clean_dirty_matrix();
+		clean_dirty_matrix(param2d.fbo_index);
 	}
 
 	vkCmdBindDescriptorSets(

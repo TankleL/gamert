@@ -18,18 +18,26 @@ public:
 	virtual ~VNode2d();
 
 public:
-	void set_poisition(const VFVec3& position);
-	void set_rotation(const VFVec3& rotation);
-	void set_scale(const VFVec3& scale);
-	void clean_dirty_matrix();
+	void set_poisition(const VFVec2& position);
+	void set_poisition_fast(const VFVec2& position);
+	void set_scale(const VFVec2& scale);
+	void set_scale_fast(const VFVec2& scale);
+	void calculate_world();
+	void clean_dirty_matrix(uint32_t fbo_idx);
 
 	const VFMat3& get_matrix_world() const;
 
+public:
+	static void set_dirty_clean_bits(uint32_t bits);
+
 protected:
 	VFMat3		_world;
-	VFVec3		_position;
-	VFVec3		_rotation;
-	VFVec3		_scale;
-	bool		_dirty_matrix;
+	VFMat3		_position;
+	VFMat3		_rotation;
+	VFMat3		_scale;
+	uint32_t	_dirty_bits;
+
+protected:
+	static uint32_t	_dirty_clean_bits;
 };
 

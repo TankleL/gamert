@@ -14,11 +14,50 @@ typedef void(*update_frame_fnp_t)(void);
 VKRenderer2d	g_render;
 VSceneGraph2d	g_scene;
 
+VNode2d* vn_mid = nullptr;;
+VNode2d* vn_left = nullptr;;
+VNode2d* vn_right = nullptr;;
+
 void dummy_update()
 {}
 
 void render_update()
 {
+	static float movex = -300.f;
+	static float movey = 0.f;
+	static bool dir_left = true;
+	static bool dir_up = true;
+
+	if (dir_left)
+	{
+		movex -= 2.f;
+		if (movex < -450.f)
+			dir_left = false;
+	}
+	else
+	{
+		movex += 2.f;
+		if (movex > -150.f)
+			dir_left = true;
+	}
+
+	if (dir_up)
+	{
+		movey += 2.f;
+		if (movey > 150.f)
+			dir_up = false;
+	}
+	else
+	{
+		movey -= 2.f;
+		if (movey < -150.f)
+			dir_up = true;
+	}
+
+
+	vn_left->set_poisition(VFVec2({movex, 0.f}));
+	vn_mid->set_poisition(VFVec2({ 0.f, movey }));
+
 	g_render.update(30.f);
 }
 
@@ -38,26 +77,30 @@ void init_gamert_app(HWND hwnd)
 	VNode* root = new VNode();
 	root->set_name("root");
 
-	{
+	{ // middle
 		VNodeQuad2d* quad = new VNodeQuad2d();
-		quad->set_poisition(VFVec3({ 300.0f, 0.0f, 0.f }));
+		quad->set_scale(VFVec2({ 150.f, 150.0f }));
 		root->manage_child(quad);
+		vn_mid = quad;
 	}
 
-	{
+	{ // left
 		VNodeQuad2d* quad = new VNodeQuad2d();
-		quad->set_poisition(VFVec3({ -300.0f, 0.0f, 0.f }));
+		quad->set_poisition_fast(VFVec2({ -300.0f, 0.0f }));
+		quad->set_scale_fast(VFVec2({ 200.f, 200.0f }));
+		quad->calculate_world();
 		root->manage_child(quad);
+		vn_left = quad;
 	}
 
-	{
+	{ // right
 		VNodeQuad2d* quad = new VNodeQuad2d();
+		quad->set_poisition_fast(VFVec2({ 300.0f, 0.0f }));
+		quad->set_scale_fast(VFVec2({ 100.f, 100.0f }));
+		quad->calculate_world();
 		root->manage_child(quad);
+		vn_right = quad;
 	}
-
-
-	
-
 
 	g_scene.init();
 	g_scene.switch_root_node(root);
@@ -130,7 +173,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		else
 		{
 			g_update_function();
-			Sleep(30);
+			Sleep(16);
 		}
 	}
 

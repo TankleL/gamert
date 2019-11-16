@@ -108,6 +108,8 @@ void VKRenderer2d::init(VKSwapchain* swapchain)
 		_ensure_stable_uniform_data();
 		_reset_single_dc_marks();
 		_scene_graph->create_drawcalls(this);
+		_reset_vnode2d_dirty_clean_bits();
+
 		_initialized = true;
 	}
 }
@@ -442,7 +444,7 @@ void VKRenderer2d::_create_uniform_buffers()
 	if (vk_min_ubo_alignment > 0)
 	{
 		_single_de_buf_alignment =
-			(_single_de_buf_alignment + vk_min_ubo_alignment - 1) & ~(vk_min_ubo_alignment - 1);
+			(uint32_t)(_single_de_buf_alignment + vk_min_ubo_alignment - 1) & ~(vk_min_ubo_alignment - 1);
 	}
 
 	for (int i = 0; i < img_count; ++i)
@@ -801,6 +803,13 @@ void VKRenderer2d::_reset_single_dc_marks()
 	{
 		mark = false;
 	}
+}
+
+void VKRenderer2d::_reset_vnode2d_dirty_clean_bits()
+{
+	uint32_t bits = (uint32_t)_swapchain->get_vulkan_image_views().size();
+	bits = (1 << bits) - 1;
+	VNode2d::set_dirty_clean_bits(bits);
 }
 
 

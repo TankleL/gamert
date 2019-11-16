@@ -10,10 +10,10 @@ VSceneGraph2d::VSceneGraph2d()
 	, _ibuffer(VK_NULL_HANDLE)
 	, _ibuffer_mem(VK_NULL_HANDLE)
 {
-	_robj._vertices[0] = VVertex2DRGB(VFVec2({ -100.f, -100.f }), VFVec3({ 0.9f, 0.5f, 0.3f }));
-	_robj._vertices[1] = VVertex2DRGB(VFVec2({ 100.f, -100.f }), VFVec3({ 0.3f, 0.9f, 0.5f }));
-	_robj._vertices[2] = VVertex2DRGB(VFVec2({ 100.f, 100.f }), VFVec3({ 0.5f, 0.3f, 0.9f }));
-	_robj._vertices[3] = VVertex2DRGB(VFVec2({ -100.f, 100.f }), VFVec3({ 0.3f, 0.9f, 1.5f }));
+	_robj._vertices[0] = VVertex2DRGB(VFVec2({ -0.5f, -0.5f }), VFVec3({ 0.9f, 0.5f, 0.3f }));
+	_robj._vertices[1] = VVertex2DRGB(VFVec2({  0.5f, -0.5f }), VFVec3({ 0.3f, 0.9f, 0.5f }));
+	_robj._vertices[2] = VVertex2DRGB(VFVec2({  0.5f,  0.5f }), VFVec3({ 0.5f, 0.3f, 0.9f }));
+	_robj._vertices[3] = VVertex2DRGB(VFVec2({ -0.5f,  0.5f }), VFVec3({ 0.3f, 0.9f, 1.5f }));
 
 	_robj._indices = {0, 1, 2, 2, 3, 0};
 }

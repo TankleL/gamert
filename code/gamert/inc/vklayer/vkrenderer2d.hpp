@@ -52,6 +52,8 @@ private:
 	void _create_primary_commandbuffers();
 	void _ensure_stable_uniform_data();
 	void _reset_single_dc_marks();
+	void _reset_vnode2d_dirty_clean_bits();
+
 
 	void _destroy_render_pass();
 	void _destroy_framebuffers();
