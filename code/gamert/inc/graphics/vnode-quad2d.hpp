@@ -12,9 +12,7 @@ public:
 public:
 	virtual void on_init() override;
 	virtual void on_create_drawcall(VKRenderer* renderer) override;
-	virtual void on_prerender() override {};
 	virtual void on_render(const render_param_t& param) override;
-	virtual void on_postrender() override {};
 	virtual void on_destroy_drawcall() override;
 	virtual void on_uninit() override;
 };

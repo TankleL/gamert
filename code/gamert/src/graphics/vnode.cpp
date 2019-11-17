@@ -95,22 +95,10 @@ void VNode::render(const render_param_t& param)
 {
 	if (_visible)
 	{
-		on_prerender();
-		for (const auto& child : _children)
-		{
-			child->on_prerender();
-		}
-
 		on_render(param);
 		for (const auto& child : _children)
 		{
 			child->on_render(param);
-		}
-
-		on_postrender();
-		for (const auto& child : _children)
-		{
-			child->on_postrender();
 		}
 	}
 }

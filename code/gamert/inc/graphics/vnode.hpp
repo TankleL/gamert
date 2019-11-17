@@ -29,11 +29,9 @@ public:
 public:
 	virtual void on_init() {};
 	virtual void on_managed() {};
-	virtual void on_prerender() {};
 	virtual void on_render(const render_param_t& param) {};
 	virtual void on_create_drawcall(VKRenderer* renderer) {}
 	virtual void on_destroy_drawcall() {};
-	virtual void on_postrender() {};
 	virtual void on_detached() {};
 	virtual void on_uninit() {};
 
