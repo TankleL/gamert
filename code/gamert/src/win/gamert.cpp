@@ -6,6 +6,9 @@
 #include "vscenegraph2d.hpp"
 #include "vnode-quad2d.hpp"
 #include "vmatrix.hpp"
+#include "joystick.hpp"
+#include "logicmgr.hpp"
+#include "lnode2d-move.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -18,46 +21,15 @@ VNode2d* vn_mid = nullptr;;
 VNode2d* vn_left = nullptr;;
 VNode2d* vn_right = nullptr;;
 
+
 void dummy_update()
 {}
 
 void render_update()
 {
-	static float movex = -300.f;
-	static float movey = 0.f;
-	static bool dir_left = true;
-	static bool dir_up = true;
+	JoyStick::get_instance().update_state();
 
-	if (dir_left)
-	{
-		movex -= 2.f;
-		if (movex < -450.f)
-			dir_left = false;
-	}
-	else
-	{
-		movex += 2.f;
-		if (movex > -150.f)
-			dir_left = true;
-	}
-
-	if (dir_up)
-	{
-		movey += 2.f;
-		if (movey > 150.f)
-			dir_up = false;
-	}
-	else
-	{
-		movey -= 2.f;
-		if (movey < -150.f)
-			dir_up = true;
-	}
-
-
-	vn_left->set_poisition(VFVec2({movex, 0.f}));
-	vn_mid->set_poisition(VFVec2({ 0.f, movey }));
-
+	LogicMgr::get_instance().tick();
 	g_render.update(30.f);
 }
 
@@ -73,6 +45,8 @@ void init_gamert_app(HWND hwnd)
 
 	VKContext::get_instance().register_renderer(&g_render);
 	VKContext::get_instance().resize();
+
+	JoyStick::get_instance().check_controllers();
 
 	VNode* root = new VNode();
 	root->set_name("root");
@@ -102,10 +76,18 @@ void init_gamert_app(HWND hwnd)
 		vn_right = quad;
 	}
 
+	{
+		LNode2dMove* move = new LNode2dMove(JoyStick::get_instance().get_default_controller());
+		move->bind(vn_mid);
+		LogicMgr::get_instance().root().manage_child(move);
+	}
+	
+
 	g_scene.init();
 	g_scene.switch_root_node(root);
 	g_render.bind_scene_graph(&g_scene);
 	g_update_function = render_update;
+
 }
 
 void uninit_gamert_app()

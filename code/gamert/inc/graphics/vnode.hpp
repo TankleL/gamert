@@ -44,7 +44,7 @@ public:
 	bool is_managed() const;
 
 	void set_name(const std::string& name);
-	std::string get_name() const;
+	const std::string& get_name() const;
 
 	void	manage_child(VNode* child);
 	VNode*	detach_child(const std::string& name);

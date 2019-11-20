@@ -72,6 +72,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_OSYS_SRC_FILES}
 	)
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
+	target_link_libraries( gamert "xinput.lib" )
 else()
 # TODO: Support other platforms
 endif()

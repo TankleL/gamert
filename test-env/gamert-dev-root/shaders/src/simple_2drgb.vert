@@ -23,7 +23,7 @@ layout(location = 0) out vec3 out_clr;
 
 void main()
 {
-	vec3 real_pos = vec3(in_pos, 1.0);
+	vec3 real_pos = vec3(in_pos.x, in_pos.y, 1.0);
 	real_pos = single_drawcall_info.world * real_pos;
 	real_pos.x /= stable_info.extent.x;
 	real_pos.y /= stable_info.extent.y;

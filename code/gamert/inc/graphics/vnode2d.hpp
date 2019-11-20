@@ -22,6 +22,8 @@ public:
 	void set_poisition_fast(const VFVec2& position);
 	void set_scale(const VFVec2& scale);
 	void set_scale_fast(const VFVec2& scale);
+	void get_position(VFVec2& position);
+
 	void calculate_world();
 	void clean_dirty_matrix(uint32_t fbo_idx);
 

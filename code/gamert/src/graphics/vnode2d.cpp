@@ -38,6 +38,12 @@ void VNode2d::set_scale(const VFVec2& scale)
 	calculate_world();
 }
 
+void VNode2d::get_position(VFVec2& position)
+{
+	position[0] = _position[2][0];
+	position[1] = _position[2][1];
+}
+
 void VNode2d::clean_dirty_matrix(uint32_t fbo_idx)
 {
 	_dirty_bits |= 1 << fbo_idx;

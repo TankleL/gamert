@@ -27,13 +27,15 @@ void VNode::set_name(const std::string& name)
 	_name = name;
 }
 
-std::string VNode::get_name() const
+const std::string& VNode::get_name() const
 {
 	return _name;
 }
 
 void VNode::manage_child(VNode* child)
 {
+	assert(child->is_managed() == false);
+
 	child->_parent = this;
 	_children.push_back(child);
 
