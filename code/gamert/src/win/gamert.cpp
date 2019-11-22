@@ -77,7 +77,7 @@ void init_gamert_app(HWND hwnd)
 	}
 
 	{
-		LNode2dMove* move = new LNode2dMove(JoyStick::get_instance().get_default_controller());
+		LNode2dMove* move = new LNode2dMove();
 		move->bind(vn_mid);
 		LogicMgr::get_instance().root().manage_child(move);
 	}
@@ -143,6 +143,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	
 	init_gamert_app(hwnd);
 
+	// set fps timer
+	LTimer fps_timer;
+	fps_timer.snapshot();
+
+	int elapsed = 0;
+	const int itvl = 100;	// frames' interval in milliseconds
+
 	// Run the message loop.
 	MSG msg = { };
 	while (msg.message != WM_QUIT)
@@ -154,8 +161,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else
 		{
+			elapsed = (int)fps_timer.elapsed();
+
+			if (elapsed < itvl)
+			{
+				Sleep(itvl - elapsed);
+			}
+
 			g_update_function();
-			Sleep(16);
+			fps_timer.snapshot();
 		}
 	}
 

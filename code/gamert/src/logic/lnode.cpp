@@ -27,12 +27,12 @@ const std::string& LNode::get_name() const
 	return _name;
 }
 
-void LNode::tick()
+void LNode::tick(const tick_param_t& param)
 {
-	on_tick();
+	on_tick(param);
 	for (auto& child : _children)
 	{
-		child->tick();
+		child->tick(param);
 	}
 }
 

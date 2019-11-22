@@ -20,6 +20,7 @@
 #include <cstdarg>
 #include <unordered_map>
 #include <cassert>
+#include <functional>
 
 // GRT Macros - Game-RT Macros
 #define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}

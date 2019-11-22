@@ -11,7 +11,8 @@ class LNode
 public:
 	typedef struct _struct_tick_param
 	{
-		float	elapsed;	// millisecond
+		float		elapsed;	// millisecond
+		uint32_t	tick;		// logic tick
 	} tick_param_t;
 
 public:
@@ -20,7 +21,7 @@ public:
 
 public:
 	virtual void on_managed() {};
-	virtual void on_tick() {};
+	virtual void on_tick(const tick_param_t& param) {};
 	virtual void on_detached() {};
 
 public:
@@ -29,7 +30,7 @@ public:
 	void				set_name(const std::string& name);
 	const std::string&	get_name() const;
 
-	void	tick();
+	void	tick(const tick_param_t& param);
 	void	manage_child(LNode* child);
 	LNode*	detach_child(const std::string& name);
 	void	detach_child(LNode* node);

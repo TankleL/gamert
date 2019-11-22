@@ -1,9 +1,12 @@
+#include "logicmgr.hpp"
 #include "lnode2d-move.hpp"
 #include "joystick.hpp"
 
-LNode2dMove::LNode2dMove(int controller)
+REG_LND_CREATOR(LNode2dMove, "Node2d-Move");
+
+LNode2dMove::LNode2dMove()
 	: _vnode(nullptr)
-	, _controller(controller)
+	, _controller(0)
 {}
 
 LNode2dMove::~LNode2dMove()
@@ -19,7 +22,7 @@ void LNode2dMove::set_controller(int controller)
 	_controller = controller;
 }
 
-void LNode2dMove::on_tick()
+void LNode2dMove::on_tick(const tick_param_t& param)
 {
 	if (_vnode)
 	{
@@ -27,8 +30,10 @@ void LNode2dMove::on_tick()
 		VFVec2	pos;
 		_vnode->get_position(pos);
 
-		pos[0] += gpad.thumb_lx * 14.4f;
-		pos[1] += gpad.thumb_ly * 14.4f;
+		float mag = param.elapsed * .5f;
+
+		pos[0] += gpad.thumb_lx * mag;
+		pos[1] += gpad.thumb_ly * mag;
 
 		_vnode->set_poisition(pos);
 	}

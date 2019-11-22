@@ -6,7 +6,7 @@
 class LNode2dMove : public LNode
 {
 public:
-	LNode2dMove(int controller);
+	LNode2dMove();
 	virtual ~LNode2dMove();
 
 public:
@@ -14,7 +14,7 @@ public:
 	void set_controller(int controller);
 
 public:
-	virtual void on_tick() override;
+	virtual void on_tick(const tick_param_t& param) override;
 
 private:
 	VNode2d*		_vnode;
