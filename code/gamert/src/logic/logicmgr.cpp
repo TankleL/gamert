@@ -1,8 +1,12 @@
 #include "logicmgr.hpp"
 
+LNode LogicMgr::_dummy_node;
+
 LogicMgr::LogicMgr()
 	: _tick(0)
+	, _root_node(&_dummy_node)
 {
+	_dummy_node.set_name("dummy");
 	_timer.snapshot();
 }
 
@@ -15,14 +19,25 @@ void LogicMgr::tick()
 	tick_param.elapsed = elapsed;
 	tick_param.tick = _tick;
 
-	_root.tick(tick_param);
+	_root_node->tick(tick_param);
 
 	++_tick;
 }
 
-LNode& LogicMgr::root()
+LNode* LogicMgr::get_root_node() const
 {
-	return _root;
+	return _root_node;
+}
+
+LNode* LogicMgr::switch_root_node(LNode* new_node)
+{
+	if (nullptr == new_node)
+		new_node = &_dummy_node;
+
+	LNode * old_node = _root_node;
+	_root_node = new_node;
+
+	return old_node;
 }
 
 void LogicMgr::register_lnode_creator(

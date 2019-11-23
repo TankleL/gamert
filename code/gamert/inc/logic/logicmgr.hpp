@@ -14,7 +14,8 @@ public:
 
 public:
 	void tick();
-	LNode& root();
+	LNode* get_root_node() const;
+	LNode* switch_root_node(LNode* new_node);
 
 	void register_lnode_creator(
 		const std::string& name,
@@ -24,13 +25,16 @@ public:
 	LNode* create_lnode(const std::string& name);
 
 private:
-	LNode		_root;
+	LNode*		_root_node;
 	LTimer		_timer;
 	uint32_t	_tick;
 
 	std::unordered_map<
 		std::string,
 		creator_t> _lnode_creator;
+
+private:
+	static LNode	_dummy_node;
 };
 
 

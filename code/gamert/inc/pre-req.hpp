@@ -23,7 +23,15 @@
 #include <functional>
 
 // GRT Macros - Game-RT Macros
-#define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}
+#if defined(DEBUG) || defined(_DEBUG)
+#	define GRT_CHECK(x, msg) if(!(x)){ throw std::runtime_error(msg);}
+#else
+#	define GRT_CHECK(x, msg) void
+#endif
+
+#define GRT_IS_STRING_EQUAL(str1, str2)		\
+			0 == strcmp(str1, str2)
+
 #define GRT_VULKAN_FACTOR_GETTER(factor_type, factor_name, private_var_name)	\
 	factor_type get_vulkan_##factor_name() const	{return private_var_name;}
 

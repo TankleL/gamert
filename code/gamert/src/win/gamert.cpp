@@ -9,6 +9,7 @@
 #include "joystick.hpp"
 #include "logicmgr.hpp"
 #include "lnode2d-move.hpp"
+#include "filter-lscene.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -37,6 +38,7 @@ update_frame_fnp_t g_update_function = dummy_update;
 
 void init_gamert_app(HWND hwnd)
 {
+	// init vulkan context
 	VKContext::get_instance().init("gamert",
 		"gamert engine",
 		VK_MAKE_VERSION(1, 0, 0),
@@ -46,15 +48,17 @@ void init_gamert_app(HWND hwnd)
 	VKContext::get_instance().register_renderer(&g_render);
 	VKContext::get_instance().resize();
 
+	// init joystick
 	JoyStick::get_instance().check_controllers();
 
-	VNode* root = new VNode();
-	root->set_name("root");
+	// init vscene
+	VNode* vroot = new VNode();
+	vroot->set_name("root");
 
 	{ // middle
 		VNodeQuad2d* quad = new VNodeQuad2d();
 		quad->set_scale(VFVec2({ 150.f, 150.0f }));
-		root->manage_child(quad);
+		vroot->manage_child(quad);
 		vn_mid = quad;
 	}
 
@@ -63,7 +67,7 @@ void init_gamert_app(HWND hwnd)
 		quad->set_poisition_fast(VFVec2({ -300.0f, 0.0f }));
 		quad->set_scale_fast(VFVec2({ 200.f, 200.0f }));
 		quad->calculate_world();
-		root->manage_child(quad);
+		vroot->manage_child(quad);
 		vn_left = quad;
 	}
 
@@ -72,22 +76,33 @@ void init_gamert_app(HWND hwnd)
 		quad->set_poisition_fast(VFVec2({ 300.0f, 0.0f }));
 		quad->set_scale_fast(VFVec2({ 100.f, 100.0f }));
 		quad->calculate_world();
-		root->manage_child(quad);
+		vroot->manage_child(quad);
 		vn_right = quad;
 	}
 
-	{
-		LNode2dMove* move = new LNode2dMove();
-		move->bind(vn_mid);
-		LogicMgr::get_instance().root().manage_child(move);
-	}
-	
-
 	g_scene.init();
-	g_scene.switch_root_node(root);
-	g_render.bind_scene_graph(&g_scene);
-	g_update_function = render_update;
+	g_scene.switch_root_node(vroot);
 
+
+	// init lscene
+	//{
+	//	LNode2dMove* move = new LNode2dMove();
+	//	move->bind(vn_mid);
+	//	LogicMgr::get_instance()
+	//		.get_root_node()->manage_child(move);
+	//}
+
+	LNode* lroot = new LNode();
+	FilterLScene fls;
+	fls.bind_root(lroot);
+	fls.load("lscene/default.xml");
+	LogicMgr::get_instance().switch_root_node(lroot);
+
+	// init renderer
+	g_render.bind_scene_graph(&g_scene);
+
+	// commit
+	g_update_function = render_update;
 }
 
 void uninit_gamert_app()
@@ -148,7 +163,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	fps_timer.snapshot();
 
 	int elapsed = 0;
-	const int itvl = 100;	// frames' interval in milliseconds
+	const int itvl = 16;	// frames' interval in milliseconds
 
 	// Run the message loop.
 	MSG msg = { };

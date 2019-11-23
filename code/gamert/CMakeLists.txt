@@ -11,6 +11,7 @@ message("Vulkan libraries: " ${Vulkan_LIBRARIES})
 message("Vulkan include: " ${Vulkan_INCLUDE_DIRS})
 
 add_subdirectory(deps/tinyxml2)
+include_directories(deps/tinyxml2/inc)
 
 #Define macros
 add_definitions(-DTEST_RESOURCES_ROOT="../../../test-env/gamert-dev-root")
