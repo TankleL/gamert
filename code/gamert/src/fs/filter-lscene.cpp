@@ -1,7 +1,7 @@
 #include "singleton.hpp"
 #include "filter-lscene.hpp"
 #include "tinyxml2.h"
-#include "resourcesmgr.hpp"
+#include "resmgr-static.hpp"
 #include "logicmgr.hpp"
 
 class _FilterLScene_XmlVisitor;
@@ -104,7 +104,7 @@ void FilterLScene::load(const std::string& filename)
 	{
 		tinyxml2::XMLDocument xdoc;
 		xdoc.LoadFile(
-			ResourcesMgr::get_instance()
+			ResMgrStatic::get_instance()
 			.fullpath(filename)
 			.c_str());
 

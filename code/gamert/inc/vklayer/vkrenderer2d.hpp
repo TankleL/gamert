@@ -21,10 +21,10 @@ public:
 	virtual void		init(VKSwapchain* swapchain) override;
 	virtual void		unint() override;
 	virtual void		update(float elapsed) override;
+	virtual void		bind_scene_graph(VSceneGraph* graph) override;
+	virtual void		unbind_scene_graph() override;
 
 public:
-	void				bind_scene_graph(VSceneGraph2d* graph);
-	void				unbind_scene_graph();
 	void				set_camera(VCamera* camera);
 	uint32_t			allocate_single_dc_ubo();
 	void				free_single_dc_ubo(uint32_t offset);

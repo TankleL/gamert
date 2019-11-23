@@ -19,7 +19,9 @@ VSceneGraph2d::VSceneGraph2d()
 }
 
 VSceneGraph2d::~VSceneGraph2d()
-{}
+{
+	uninit();
+}
 
 VkBuffer VSceneGraph2d::get_vertex_buffer() const
 {

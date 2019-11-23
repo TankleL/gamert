@@ -17,6 +17,7 @@ public:
 	void	create_drawcalls(VKRenderer* renderer);
 	void	destroy_drawcalls();
 	void	set_renderer(VKRenderer* renderer);
+	VNode*	get_root_node() const;
 
 private:
 	VNode*		_root_node;

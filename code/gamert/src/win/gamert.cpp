@@ -10,18 +10,13 @@
 #include "logicmgr.hpp"
 #include "lnode2d-move.hpp"
 #include "filter-lscene.hpp"
+#include "resmgr-runtime.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 typedef void(*update_frame_fnp_t)(void);
 
 VKRenderer2d	g_render;
-VSceneGraph2d	g_scene;
-
-VNode2d* vn_mid = nullptr;;
-VNode2d* vn_left = nullptr;;
-VNode2d* vn_right = nullptr;;
-
 
 void dummy_update()
 {}
@@ -51,37 +46,47 @@ void init_gamert_app(HWND hwnd)
 	// init joystick
 	JoyStick::get_instance().check_controllers();
 
-	// init vscene
-	VNode* vroot = new VNode();
-	vroot->set_name("root");
+	// init visual scene
+	{
+		VNode* vroot = new VNode();
+		vroot->set_name("root");
 
-	{ // middle
-		VNodeQuad2d* quad = new VNodeQuad2d();
-		quad->set_scale(VFVec2({ 150.f, 150.0f }));
-		vroot->manage_child(quad);
-		vn_mid = quad;
+		{ // middle
+			VNodeQuad2d* quad = new VNodeQuad2d();
+			quad->set_name("vmid");
+			quad->set_scale(VFVec2({ 150.f, 150.0f }));
+			vroot->manage_child(quad);
+
+			VNodeQuad2d* quad2 = new VNodeQuad2d();
+			quad2->set_name("vmidtop");
+			quad2->set_poisition_fast(VFVec2({ 0.f, -200.0f }));
+			quad2->set_scale_fast(VFVec2({ 100.f, 100.0f }));
+			quad2->calculate_world();
+			quad->manage_child(quad2);
+		}
+
+		{ // left
+			VNodeQuad2d* quad = new VNodeQuad2d();
+			quad->set_poisition_fast(VFVec2({ -300.0f, 0.0f }));
+			quad->set_scale_fast(VFVec2({ 200.f, 200.0f }));
+			quad->calculate_world();
+			vroot->manage_child(quad);
+		}
+
+		{ // right
+			VNodeQuad2d* quad = new VNodeQuad2d();
+			quad->set_poisition_fast(VFVec2({ 300.0f, 0.0f }));
+			quad->set_scale_fast(VFVec2({ 100.f, 100.0f }));
+			quad->calculate_world();
+			vroot->manage_child(quad);
+		}
+
+		VSceneGraph2d* vscene = new VSceneGraph2d();
+		vscene->init();
+		vscene->switch_root_node(vroot);
+		ResMgrRuntime::get_instance()
+			.manage_visual_scene("test-default", vscene);
 	}
-
-	{ // left
-		VNodeQuad2d* quad = new VNodeQuad2d();
-		quad->set_poisition_fast(VFVec2({ -300.0f, 0.0f }));
-		quad->set_scale_fast(VFVec2({ 200.f, 200.0f }));
-		quad->calculate_world();
-		vroot->manage_child(quad);
-		vn_left = quad;
-	}
-
-	{ // right
-		VNodeQuad2d* quad = new VNodeQuad2d();
-		quad->set_poisition_fast(VFVec2({ 300.0f, 0.0f }));
-		quad->set_scale_fast(VFVec2({ 100.f, 100.0f }));
-		quad->calculate_world();
-		vroot->manage_child(quad);
-		vn_right = quad;
-	}
-
-	g_scene.init();
-	g_scene.switch_root_node(vroot);
 
 
 	// init lscene
@@ -92,14 +97,20 @@ void init_gamert_app(HWND hwnd)
 	//		.get_root_node()->manage_child(move);
 	//}
 
-	LNode* lroot = new LNode();
-	FilterLScene fls;
-	fls.bind_root(lroot);
-	fls.load("lscene/default.xml");
-	LogicMgr::get_instance().switch_root_node(lroot);
+	// init logic scene
+	{
+		LNode* lroot = new LNode();
+		FilterLScene fls;
+		fls.bind_root(lroot);
+		fls.load("lscene/default.xml");
+		LogicMgr::get_instance().switch_root_node(lroot);
+	}
 
 	// init renderer
-	g_render.bind_scene_graph(&g_scene);
+	g_render.bind_scene_graph(
+		(VSceneGraph2d*)
+		ResMgrRuntime::get_instance()
+		.get_visual_scene("test-default"));
 
 	// commit
 	g_update_function = render_update;
@@ -107,10 +118,7 @@ void init_gamert_app(HWND hwnd)
 
 void uninit_gamert_app()
 {
-	g_scene.uninit();
-
-	VNode* root = g_scene.switch_root_node(nullptr);
-	delete root;	// root will release all its children.
+	ResMgrRuntime::get_instance().purge_visual_scenes();
 
 	g_render.unint();
 	VKContext::get_instance().destroy();

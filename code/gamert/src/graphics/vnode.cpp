@@ -1,4 +1,5 @@
 #include "vnode.hpp"
+#include "utils-string.hpp"
 
 using namespace std;
 
@@ -100,7 +101,7 @@ void VNode::render(const render_param_t& param)
 		on_render(param);
 		for (const auto& child : _children)
 		{
-			child->on_render(param);
+			child->render(param);
 		}
 	}
 }
@@ -155,5 +156,50 @@ void VNode::destroy_drawcall()
 		}
 
 		on_destroy_drawcall();
+		_drawcall = nullptr;
 	}
+}
+
+VNode* VNode::get_child_flat(const std::string& name) const
+{
+	for (const auto& child : _children)
+	{
+		if (name == child->get_name())
+			return child;
+	}
+	return nullptr;
+}
+
+VNode* VNode::get_child(const std::string& name) const
+{
+	return _get_child(name, 0);
+}
+
+VNode* VNode::_get_child(
+	const std::string& name,
+	size_t strview_beg) const
+{
+	for (const auto& child : _children)
+	{
+		if (utils_string
+			::are_strings_equal(
+				child->get_name(),
+				name,
+				strview_beg, '/'))
+		{
+			if (strview_beg + child->get_name().length() + 1
+				< name.length())
+			{
+				return child->_get_child(
+					name,
+					strview_beg + child->get_name().length() + 1);
+			}
+			else
+			{
+				return child;
+			}
+		}
+	}
+
+	return nullptr;
 }

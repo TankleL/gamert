@@ -2,7 +2,7 @@
 #include "vkcontext.hpp"
 #include "vkutils.hpp"
 #include "vvertex.hpp"
-#include "resourcesmgr.hpp"
+#include "resmgr-static.hpp"
 #include "vnode2d.hpp"
 
 using namespace std;
@@ -26,13 +26,17 @@ VKRenderer2d::VKRenderer2d(uint32_t max_drawcalls)
 	_single_dc_marks.resize(max_drawcalls);
 }
 
-void VKRenderer2d::bind_scene_graph(VSceneGraph2d* graph)
+void VKRenderer2d::bind_scene_graph(VSceneGraph* graph)
 {
 	unbind_scene_graph();
 
+	GRT_CHECK(
+		GRT_IS_CLASS_PTR(graph, VSceneGraph2d),
+		"wrong type of the input obj");
+
 	if (graph)
 	{
-		_scene_graph = graph;
+		_scene_graph = (VSceneGraph2d*)graph;
 		_scene_graph->set_renderer(this);
 	}
 	else
@@ -118,7 +122,8 @@ void VKRenderer2d::unint()
 {
 	if (_initialized)
 	{
-		_scene_graph->destroy_drawcalls();
+		if(_scene_graph)
+			_scene_graph->destroy_drawcalls();
 		_destroy_primary_commandbuffers();
 		_destroy_descriptor_set();
 		_destroy_descriptor_pool();
@@ -237,7 +242,7 @@ void VKRenderer2d::_destroy_framebuffers()
 
 void VKRenderer2d::_create_graphics_pipeline()
 {
-	ResourcesMgr& resmgr = ResourcesMgr::get_instance();
+	ResMgrStatic& resmgr = ResMgrStatic::get_instance();
 	const VkDevice vkdev = VKContext::get_instance().get_vulkan_device();
 	std::vector<std::uint8_t> vs_code;
 	std::vector<std::uint8_t> fs_code;

@@ -3,9 +3,10 @@
 #include "pre-req.hpp"
 #include "singleton.hpp"
 
-class ResourcesMgr : public Singleton<ResourcesMgr>
+class ResMgrStatic
+	: public Singleton<ResMgrStatic>
 {
-	DECL_SINGLETON_CTOR(ResourcesMgr);
+	DECL_SINGLETON_CTOR(ResMgrStatic);
 
 public:
 	void set_resources_root_path(const std::string& path);

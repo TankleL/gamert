@@ -1,4 +1,5 @@
 #include "vscenegraph.hpp"
+#include "vkrenderer.hpp"
 
 using namespace std;
 
@@ -12,7 +13,18 @@ VSceneGraph::VSceneGraph()
 }
 
 VSceneGraph::~VSceneGraph()
-{}
+{
+	if (_renderer)
+	{
+		_renderer->unbind_scene_graph();
+	}
+
+	assert(_root_node != nullptr);
+	if (_root_node != &_dummy_node)
+	{
+		delete _root_node;
+	}
+}
 
 void VSceneGraph::update(const VNode::render_param_t& param)
 {
@@ -61,4 +73,9 @@ void VSceneGraph::set_renderer(VKRenderer* renderer)
 		_root_node->destroy_drawcall();
 		_renderer = nullptr;
 	}
+}
+
+VNode* VSceneGraph::get_root_node() const
+{
+	return _root_node;
 }

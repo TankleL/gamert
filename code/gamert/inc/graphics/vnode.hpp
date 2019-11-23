@@ -51,6 +51,14 @@ public:
 	void	detach_child(VNode* node);
 	void	detach();
 
+	VNode* get_child_flat(const std::string& name) const;
+	VNode* get_child(const std::string& name) const;
+
+protected:
+	VNode* _get_child(
+		const std::string& name, 
+		size_t strview_beg) const;
+
 protected:
 	VDrawCall*				_drawcall;
 
