@@ -53,6 +53,7 @@ public:
 
 	VNode* get_child_flat(const std::string& name) const;
 	VNode* get_child(const std::string& name) const;
+	VNode* get_parent() const;
 
 protected:
 	VNode* _get_child(

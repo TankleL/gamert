@@ -26,11 +26,14 @@ VSceneGraph*
 ResMgrRuntime::get_visual_scene(const std::string& name) const
 {
 	const auto& scene = _vscenes.find(name);
-	GRT_CHECK(
-		scene != _vscenes.end(),
-		"target scene not found.");
-
-	return scene->second;
+	if (scene != _vscenes.end())
+	{
+		return scene->second;
+	}
+	else
+	{
+		return nullptr;
+	}
 }
 
 LNode*

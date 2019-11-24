@@ -86,6 +86,11 @@ void VNode::detach_child(VNode* node)
 	}
 }
 
+VNode* VNode::get_parent() const
+{
+	return _parent;
+}
+
 void VNode::detach()
 {
 	if (_parent)

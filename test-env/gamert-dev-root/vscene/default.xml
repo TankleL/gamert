@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SceneGraph2d>
+	<GraphRoot>
+		<Node-Quad Name="vmid" Scale="150.0, 150.0">
+			<Node-Quad Name="vmidtop" Scale="100.0, 100.0" Position="0.0, -200.0"/>
+		</Node-Quad>
+	</GraphRoot>
+</SceneGraph2d>

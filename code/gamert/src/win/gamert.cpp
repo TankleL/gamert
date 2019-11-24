@@ -10,6 +10,7 @@
 #include "logicmgr.hpp"
 #include "lnode2d-move.hpp"
 #include "filter-lscene.hpp"
+#include "filter-vscene.hpp"
 #include "resmgr-runtime.hpp"
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -48,54 +49,11 @@ void init_gamert_app(HWND hwnd)
 
 	// init visual scene
 	{
-		VNode* vroot = new VNode();
-		vroot->set_name("root");
-
-		{ // middle
-			VNodeQuad2d* quad = new VNodeQuad2d();
-			quad->set_name("vmid");
-			quad->set_scale(VFVec2({ 150.f, 150.0f }));
-			vroot->manage_child(quad);
-
-			VNodeQuad2d* quad2 = new VNodeQuad2d();
-			quad2->set_name("vmidtop");
-			quad2->set_poisition_fast(VFVec2({ 0.f, -200.0f }));
-			quad2->set_scale_fast(VFVec2({ 100.f, 100.0f }));
-			quad2->calculate_world();
-			quad->manage_child(quad2);
-		}
-
-		{ // left
-			VNodeQuad2d* quad = new VNodeQuad2d();
-			quad->set_poisition_fast(VFVec2({ -300.0f, 0.0f }));
-			quad->set_scale_fast(VFVec2({ 200.f, 200.0f }));
-			quad->calculate_world();
-			vroot->manage_child(quad);
-		}
-
-		{ // right
-			VNodeQuad2d* quad = new VNodeQuad2d();
-			quad->set_poisition_fast(VFVec2({ 300.0f, 0.0f }));
-			quad->set_scale_fast(VFVec2({ 100.f, 100.0f }));
-			quad->calculate_world();
-			vroot->manage_child(quad);
-		}
-
-		VSceneGraph2d* vscene = new VSceneGraph2d();
-		vscene->init();
-		vscene->switch_root_node(vroot);
+		FilterVScene fvs;
+		VSceneGraph* vscene = fvs.load("vscene/default.xml");
 		ResMgrRuntime::get_instance()
-			.manage_visual_scene("test-default", vscene);
+			.manage_visual_scene("default", vscene);
 	}
-
-
-	// init lscene
-	//{
-	//	LNode2dMove* move = new LNode2dMove();
-	//	move->bind(vn_mid);
-	//	LogicMgr::get_instance()
-	//		.get_root_node()->manage_child(move);
-	//}
 
 	// init logic scene
 	{
@@ -110,7 +68,7 @@ void init_gamert_app(HWND hwnd)
 	g_render.bind_scene_graph(
 		(VSceneGraph2d*)
 		ResMgrRuntime::get_instance()
-		.get_visual_scene("test-default"));
+		.get_visual_scene("default"));
 
 	// commit
 	g_update_function = render_update;

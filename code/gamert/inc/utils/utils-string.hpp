@@ -13,4 +13,8 @@ namespace utils_string
 		const std::string& str_long,
 		size_t viewbeg_long,
 		char endch_long);
+
+	std::vector<float>	strings_to_floats(
+		const std::string& str,
+		char separator);
 }

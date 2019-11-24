@@ -2,7 +2,10 @@
 #include "filter-lscene.hpp"
 #include "tinyxml2.h"
 #include "resmgr-static.hpp"
+#include "resmgr-runtime.hpp"
 #include "logicmgr.hpp"
+#include "vscenegraph.hpp"
+#include "lnode2d-move.hpp"
 
 class _FilterLScene_XmlVisitor;
 class _FilterLScene_NodeProcTable
@@ -72,11 +75,65 @@ private:
 	void _proc_lnode2d_move(
 		const tinyxml2::XMLElement& element)
 	{
-		LNode* node = LogicMgr::get_instance().create_lnode(
+		LNode2dMove* node = (LNode2dMove*)LogicMgr::get_instance().create_lnode(
 			element.Name());
 		GRT_CHECK(
 			node != nullptr,
 			"logic manager doesn't know how to create target node");
+
+		const char* name = element.Name();
+		if (name)
+		{
+			node->set_name(name);
+		}
+
+		const char* bind_vscene = element.Attribute("BindVScene");
+		const char* bind_vnode = element.Attribute("BindVNode");
+		if (bind_vscene && bind_vnode)
+		{
+			VSceneGraph* vscene = ResMgrRuntime::get_instance()
+				.get_visual_scene(bind_vscene);
+			if (!vscene)
+			{
+				delete node;
+				throw std::runtime_error(
+					"the given BindVScene not found.");
+			}
+
+			VNode* vroot = vscene->get_root_node();
+			if (!vroot)
+			{
+				delete node;
+				throw std::runtime_error(
+					"the given BindVScene doesn't have root node.");
+			}
+
+			VNode* target = (VNode*)vroot->get_child(bind_vnode);
+			if (target)
+			{
+				if (GRT_IS_CLASS_PTR(target, VNode2d))
+				{
+					node->bind((VNode2d*)target);
+				}
+				else
+				{
+					delete node;
+					throw std::runtime_error(
+						"the given BindVNode is not a 2d node.");
+				}
+			}
+			else
+			{
+				delete node;
+				throw std::runtime_error("bad vscene params.");
+			}
+		}
+		else
+		{
+			delete node;
+			throw std::runtime_error("bad vscene params.");
+		}
+
 		_filter._root->manage_child(node);
 	}
 
