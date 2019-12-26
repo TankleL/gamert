@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<root>
-	<Node2d-Move Name="move0" Controller="Default" BindVScene="default" BindVNode="vmid" />
-</root>
+<SceneGraph>
+	<GraphRoot>
+		<Node2d-Move Name="move0" Controller="Default" BindVScene="default" BindVNode="vleft" />
+	</GraphRoot>
+</SceneGraph>

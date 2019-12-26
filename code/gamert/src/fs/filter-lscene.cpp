@@ -8,13 +8,21 @@
 #include "lnode2d-move.hpp"
 
 class _FilterLScene_XmlVisitor;
+
+
+/********************************************************************
+ * @class _FilterLScene_NodeProcTable
+ * @singleton
+ * @brief store a table of node processes
+ *******************************************************************/
 class _FilterLScene_NodeProcTable
 	: public Singleton<_FilterLScene_NodeProcTable>
 {
 	DECL_SINGLETON_CTOR(_FilterLScene_NodeProcTable);
 	
 public:
-	typedef void(_FilterLScene_XmlVisitor::*node_proc_t)
+	typedef
+		LNode* (_FilterLScene_XmlVisitor::*node_proc_t)
 		(const tinyxml2::XMLElement& element);
 
 public:
@@ -38,6 +46,11 @@ private:
 		node_proc_t>	_procs;
 };
 
+
+/********************************************************************
+ * @class _FilterLScene_XmlVisitor
+ * @brief help filter process xml nodes
+ *******************************************************************/
 class _FilterLScene_XmlVisitor
 	: public tinyxml2::XMLVisitor
 {
@@ -45,6 +58,7 @@ class _FilterLScene_XmlVisitor
 public:
 	_FilterLScene_XmlVisitor(FilterLScene& filter)
 		: _filter(filter)
+		, _curnode(nullptr)
 	{}
 
 public:
@@ -59,7 +73,13 @@ public:
 
 		if (proc)
 		{
-			(this->*proc)(element);
+			LNode* newnode = ((this->*proc))(element);
+			if (newnode)
+			{
+				if (_curnode)
+					_curnode->manage_child(newnode);
+				_curnode = newnode;
+			}
 		}
 		return true;
 	}
@@ -68,11 +88,27 @@ public:
 	virtual bool VisitExit(
 		const tinyxml2::XMLElement& element) override 
 	{
+		if (_curnode && _curnode->get_parent())
+		{
+			_curnode = _curnode->get_parent();
+		}
 		return true;
 	}
 
+public:
+	LNode* graphroot() const
+	{
+		return _curnode;
+	}
+
 private:
-	void _proc_lnode2d_move(
+	LNode* _proc_graphroot(
+		const tinyxml2::XMLElement& element)
+	{
+		return new LNode();
+	}
+
+	LNode* _proc_lnode2d_move(
 		const tinyxml2::XMLElement& element)
 	{
 		LNode2dMove* node = (LNode2dMove*)LogicMgr::get_instance().create_lnode(
@@ -81,7 +117,7 @@ private:
 			node != nullptr,
 			"logic manager doesn't know how to create target node");
 
-		const char* name = element.Name();
+		const char* name = element.Attribute("Name");
 		if (name)
 		{
 			node->set_name(name);
@@ -134,28 +170,33 @@ private:
 			throw std::runtime_error("bad vscene params.");
 		}
 
-		_filter._root->manage_child(node);
+		return node;
 	}
 
 private:
 	FilterLScene&		_filter;
+	LNode*				_curnode;
 };
 
+
+/********************************************************************
+ * @ctor _FilterVScene_NodeProcTable
+ * @brief intitialize process table
+ *******************************************************************/
 _FilterLScene_NodeProcTable::_FilterLScene_NodeProcTable()
 {
 	_procs["Node2d-Move"] = &_FilterLScene_XmlVisitor::_proc_lnode2d_move;
 }
 
+
+/********************************************************************
+ * @impl FilterLScene
+ *******************************************************************/
 FilterLScene::FilterLScene()
-	: _root(nullptr)
+	: _scene(nullptr)
 {}
 
-void FilterLScene::bind_root(LNode* root)
-{
-	_root = root;
-}
-
-void FilterLScene::load(const std::string& filename)
+LSceneGraph* FilterLScene::load(const std::string& filename)
 {
 	try
 	{
@@ -165,15 +206,20 @@ void FilterLScene::load(const std::string& filename)
 			.fullpath(filename)
 			.c_str());
 
-		const auto& root = xdoc.RootElement();
-		GRT_CHECK(
-			GRT_IS_STRING_EQUAL(
-				root->Name(),
-				"root"),
-			"unknown file format");
+		const auto& xgraph = xdoc.RootElement();
 
-		_FilterLScene_XmlVisitor visitor(*this);
-		root->Accept(&visitor);
+		if (GRT_IS_STRING_EQUAL(
+			xgraph->Name(),
+			"SceneGraph"))
+		{
+			_load_scenegraph(xgraph);
+			return _scene;
+		}
+		else
+		{
+			throw std::runtime_error(
+				"unknown file format.");
+		}
 	}
 	catch (std::exception ex)
 	{
@@ -182,6 +228,37 @@ void FilterLScene::load(const std::string& filename)
 	}
 }
 
-void FilterLScene::save(const std::string& filename)
+void FilterLScene::save(
+	const std::string& filename,
+	LSceneGraph* scene)
 {}
 
+void FilterLScene::_load_scenegraph(void* xmlgraph)
+{
+	tinyxml2::XMLElement* xgraph = (tinyxml2::XMLElement*)xmlgraph;
+	_scene = new LSceneGraph();
+
+	try
+	{
+		tinyxml2::XMLElement* xroot = xgraph->LastChildElement("GraphRoot");
+		if (xroot != nullptr)
+		{
+			_FilterLScene_XmlVisitor visitor(*this);
+			xroot->Accept(&visitor);
+			if (visitor.graphroot() != nullptr)
+			{
+				_scene->switch_root_node(visitor.graphroot());
+			}
+		}
+		else
+		{
+			throw std::runtime_error("GraphRoot not found.");
+		}
+	}
+	catch (std::exception ex)
+	{
+		delete _scene;
+		_scene = nullptr;
+		throw ex;
+	}
+}

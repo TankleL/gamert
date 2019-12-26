@@ -250,6 +250,7 @@ void FilterVScene::_load_scenegraph2d(void* xmlgraph)
 	catch (std::exception ex)
 	{
 		delete _scene;
+		_scene = nullptr;
 		throw ex;
 	}
 }

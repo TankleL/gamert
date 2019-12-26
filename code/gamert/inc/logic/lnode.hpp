@@ -29,6 +29,7 @@ public:
 
 	void				set_name(const std::string& name);
 	const std::string&	get_name() const;
+	LNode*				get_parent() const;
 
 	void	tick(const tick_param_t& param);
 	void	manage_child(LNode* child);

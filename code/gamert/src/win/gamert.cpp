@@ -41,6 +41,7 @@ void init_gamert_app(HWND hwnd)
 		VK_MAKE_VERSION(1, 0, 0),
 		hwnd);
 
+
 	VKContext::get_instance().register_renderer(&g_render);
 	VKContext::get_instance().resize();
 

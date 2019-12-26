@@ -4,5 +4,6 @@
 		<Node-Quad Name="vmid" Scale="150.0, 150.0">
 			<Node-Quad Name="vmidtop" Scale="100.0, 100.0" Position="0.0, -200.0"/>
 		</Node-Quad>
+		<Node-Quad Name="vleft" Scale="200.0, 200.0" Position="-300.0, 0.0"/>
 	</GraphRoot>
 </SceneGraph2d>

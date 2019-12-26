@@ -27,6 +27,11 @@ const std::string& LNode::get_name() const
 	return _name;
 }
 
+LNode* LNode::get_parent() const
+{
+	return _parent;
+}
+
 void LNode::tick(const tick_param_t& param)
 {
 	on_tick(param);

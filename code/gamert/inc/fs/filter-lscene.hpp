@@ -2,6 +2,7 @@
 
 #include "pre-req.hpp"
 #include "lnode.hpp"
+#include "lscenegraph.hpp"
 
 class _FilterLScene_XmlVisitor;
 
@@ -16,11 +17,15 @@ public:
 	FilterLScene();
 
 public:
-	void bind_root(LNode* root);
-	void load(const std::string& filename);
-	void save(const std::string& filename);
+	LSceneGraph* load(const std::string& filename);
+	void save(
+		const std::string& filename,
+		LSceneGraph* scene);
 
 private:
-	LNode* _root;
+	void _load_scenegraph(void* xmlgraph);
+
+private:
+	LSceneGraph* _scene;
 };
 
