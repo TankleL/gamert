@@ -13,6 +13,8 @@
 #include "filter-vscene.hpp"
 #include "resmgr-runtime.hpp"
 
+#define	FRAMES_FLIPPING_INTERVAL		16.f
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 typedef void(*update_frame_fnp_t)(void);
@@ -24,8 +26,6 @@ void dummy_update()
 
 void render_update()
 {
-	JoyStick::get_instance().update_state();
-
 	LogicMgr::get_instance().tick();
 	g_render.update(30.f);
 }
@@ -72,7 +72,9 @@ void init_gamert_app(HWND hwnd)
 
 	// init logic layers
 	LogicMgr::get_instance()
-		.switch_scene_graph(
+		.add_channel(
+			"default",
+			FRAMES_FLIPPING_INTERVAL,
 			ResMgrRuntime::get_instance()
 				.get_logic_scene("default"));
 
@@ -134,8 +136,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 	LTimer fps_timer;
 	fps_timer.snapshot();
 
-	int elapsed = 0;
-	const int itvl = 16;	// frames' interval in milliseconds
+	float elapsed = 0.f;
 
 	// Run the message loop.
 	MSG msg = { };
@@ -148,11 +149,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 		else
 		{
-			elapsed = (int)fps_timer.elapsed();
+			elapsed = fps_timer.elapsed();
 
-			if (elapsed < itvl)
+			if (elapsed < FRAMES_FLIPPING_INTERVAL)
 			{
-				Sleep(itvl - elapsed);
+				Sleep((DWORD)(FRAMES_FLIPPING_INTERVAL - elapsed));
 			}
 
 			g_update_function();

@@ -12,7 +12,7 @@ public:
 	typedef struct _struct_tick_param
 	{
 		float		elapsed;	// millisecond
-		uint32_t	tick;		// logic tick
+		uint32_t	ticks;		// logic tick
 	} tick_param_t;
 
 public:

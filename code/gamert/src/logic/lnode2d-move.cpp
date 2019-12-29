@@ -26,7 +26,9 @@ void LNode2dMove::on_tick(const tick_param_t& param)
 {
 	if (_vnode)
 	{
-		auto gpad = JoyStick::get_instance().get_gamepad(_controller);
+		auto& js = JoyStick::get_instance();
+		js.update_state();
+		auto gpad = js.get_gamepad(_controller);
 		VFVec2	pos;
 		_vnode->get_position(pos);
 
