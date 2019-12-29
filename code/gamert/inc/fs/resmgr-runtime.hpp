@@ -4,7 +4,7 @@
 #include "singleton.hpp"
 
 class VSceneGraph;
-class LNode;
+class LSceneGraph;
 
 class ResMgrRuntime
 	: public Singleton<ResMgrRuntime>
@@ -21,11 +21,10 @@ public:
 
 	void manage_logic_scene(
 		const std::string& name,
-		LNode* lscene);
+		LSceneGraph* lscene);
 
 	VSceneGraph* get_visual_scene(const std::string& name) const;
-
-	LNode* get_logic_scene(const std::string& name) const;
+	LSceneGraph* get_logic_scene(const std::string& name) const;
 
 	void purge_visual_scenes();
 	void purge_logic_scenes();
@@ -36,6 +35,6 @@ private:
 		VSceneGraph*>	_vscenes;
 	std::unordered_map<
 		std::string,
-		LNode*>			_lscenes;
+		LSceneGraph*>	_lscenes;
 };
 

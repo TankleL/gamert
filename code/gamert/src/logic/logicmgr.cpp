@@ -1,12 +1,12 @@
 #include "logicmgr.hpp"
 
-LNode LogicMgr::_dummy_node;
+LSceneGraph LogicMgr::_dummy_scene;
 
 LogicMgr::LogicMgr()
 	: _tick(0)
-	, _root_node(&_dummy_node)
+	, _scene(&_dummy_scene)
 {
-	_dummy_node.set_name("dummy");
+	_scene->set_name("dummy");
 	_timer.snapshot();
 }
 
@@ -19,25 +19,25 @@ void LogicMgr::tick()
 	tick_param.elapsed = elapsed;
 	tick_param.tick = _tick;
 
-	_root_node->tick(tick_param);
+	_scene->tick(tick_param);
 
 	++_tick;
 }
 
-LNode* LogicMgr::get_root_node() const
+LSceneGraph* LogicMgr::get_scene_graph() const
 {
-	return _root_node;
+	return _scene;
 }
 
-LNode* LogicMgr::switch_root_node(LNode* new_node)
+LSceneGraph* LogicMgr::switch_scene_graph(LSceneGraph* new_scene)
 {
-	if (nullptr == new_node)
-		new_node = &_dummy_node;
+	if (nullptr == new_scene)
+		new_scene = &_dummy_scene;
 
-	LNode * old_node = _root_node;
-	_root_node = new_node;
+	LSceneGraph* old = _scene;
+	_scene = new_scene;
 
-	return old_node;
+	return old;
 }
 
 void LogicMgr::register_lnode_creator(

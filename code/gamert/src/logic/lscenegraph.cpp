@@ -37,5 +37,17 @@ float LSceneGraph::get_update_interval() const
 	return _update_itvl;
 }
 
+void LSceneGraph::set_name(const std::string& name)
+{
+	_name = name;
+}
 
+std::string LSceneGraph::get_name() const
+{
+	return _name;
+}
 
+void LSceneGraph::tick(const LNode::tick_param_t& param)
+{
+	_root_node->tick(param);
+}

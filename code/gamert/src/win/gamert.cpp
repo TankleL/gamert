@@ -58,11 +58,10 @@ void init_gamert_app(HWND hwnd)
 
 	// init logic scene
 	{
-		LNode* lroot = new LNode();
 		FilterLScene fls;
-		fls.bind_root(lroot);
-		fls.load("lscene/default.xml");
-		LogicMgr::get_instance().switch_root_node(lroot);
+		LSceneGraph* lscene = fls.load("lscene/default.xml");
+		ResMgrRuntime::get_instance()
+			.manage_logic_scene("default", lscene);
 	}
 
 	// init renderer
@@ -70,6 +69,12 @@ void init_gamert_app(HWND hwnd)
 		(VSceneGraph2d*)
 		ResMgrRuntime::get_instance()
 		.get_visual_scene("default"));
+
+	// init logic layers
+	LogicMgr::get_instance()
+		.switch_scene_graph(
+			ResMgrRuntime::get_instance()
+				.get_logic_scene("default"));
 
 	// commit
 	g_update_function = render_update;

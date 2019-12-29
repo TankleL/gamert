@@ -185,6 +185,7 @@ private:
  *******************************************************************/
 _FilterLScene_NodeProcTable::_FilterLScene_NodeProcTable()
 {
+	_procs["GraphRoot"] = &_FilterLScene_XmlVisitor::_proc_graphroot;
 	_procs["Node2d-Move"] = &_FilterLScene_XmlVisitor::_proc_lnode2d_move;
 }
 

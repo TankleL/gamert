@@ -17,9 +17,15 @@ public:
 	void	set_update_interval(float itvl);
 	float	get_update_interval() const;
 
+	void		set_name(const std::string& name);
+	std::string get_name() const;
+
+	void	tick(const LNode::tick_param_t& param);
+
 private:
-	LNode*	_root_node;
-	float	_update_itvl;		// update interval in milliseconds.
+	std::string	_name;
+	LNode*		_root_node;
+	float		_update_itvl;		// update interval in milliseconds.
 
 private:
 	static LNode _dummy_node;

@@ -2,8 +2,8 @@
 
 #include "pre-req.hpp"
 #include "singleton.hpp"
-#include "lnode.hpp"
 #include "ltimer.hpp"
+#include "lscenegraph.hpp"
 
 class LogicMgr : public Singleton<LogicMgr>
 {
@@ -14,8 +14,9 @@ public:
 
 public:
 	void tick();
-	LNode* get_root_node() const;
-	LNode* switch_root_node(LNode* new_node);
+
+	LSceneGraph* switch_scene_graph(LSceneGraph* graph);
+	LSceneGraph* get_scene_graph() const;
 
 	void register_lnode_creator(
 		const std::string& name,
@@ -25,16 +26,19 @@ public:
 	LNode* create_lnode(const std::string& name);
 
 private:
-	LNode*		_root_node;
-	LTimer		_timer;
-	uint32_t	_tick;
-
 	std::unordered_map<
 		std::string,
 		creator_t> _lnode_creator;
 
 private:
-	static LNode	_dummy_node;
+	LTimer			_timer;
+	uint32_t		_tick;
+
+private:
+	LSceneGraph*	_scene;
+
+private:
+	static LSceneGraph _dummy_scene;
 };
 
 

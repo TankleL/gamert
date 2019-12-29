@@ -1,6 +1,6 @@
 #include "resmgr-runtime.hpp"
 #include "vscenegraph.hpp"
-#include "lnode.hpp"
+#include "lscenegraph.hpp"
 
 ResMgrRuntime::ResMgrRuntime()
 {}
@@ -17,7 +17,7 @@ void ResMgrRuntime::manage_visual_scene(
 
 void ResMgrRuntime::manage_logic_scene(
 	const std::string& name,
-	LNode* lscene)
+	LSceneGraph* lscene)
 {
 	_lscenes[name] = lscene;
 }
@@ -36,7 +36,7 @@ ResMgrRuntime::get_visual_scene(const std::string& name) const
 	}
 }
 
-LNode*
+LSceneGraph*
 ResMgrRuntime::get_logic_scene(const std::string& name) const
 {
 	const auto& scene = _lscenes.find(name);
