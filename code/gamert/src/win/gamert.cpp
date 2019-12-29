@@ -13,6 +13,8 @@
 #include "filter-vscene.hpp"
 #include "resmgr-runtime.hpp"
 
+#include "antenna.hpp"
+
 #define	FRAMES_FLIPPING_INTERVAL		16.f
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -138,6 +140,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	float elapsed = 0.f;
 
+	antenna::config::tcp_connections.push_back(
+		antenna::config::tcp_connection_t(
+			"127.0.0.1",
+			8088,
+			antenna::ST_GameServer
+		));
+
+	antenna::Antenna at;
+	at.startup();
+
 	// Run the message loop.
 	MSG msg = { };
 	while (msg.message != WM_QUIT)
@@ -160,6 +172,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 			fps_timer.snapshot();
 		}
 	}
+
+	at.shutdown();
 
 	VKContext::get_instance().wait_device_idle();
 	uninit_gamert_app();

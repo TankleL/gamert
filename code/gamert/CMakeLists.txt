@@ -13,7 +13,7 @@ message("Vulkan include: " ${Vulkan_INCLUDE_DIRS})
 add_subdirectory(deps/tinyxml2)
 add_subdirectory(deps/antenna/code/antenna)
 include_directories(deps/tinyxml2/inc)
-include_directories(eps/antenna/code/antenna/inc)
+include_directories(deps/antenna/code/antenna/inc)
 
 #Define macros
 add_definitions(-DTEST_RESOURCES_ROOT="../../../test-env/gamert-dev-root")
