@@ -85,7 +85,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 	target_link_libraries( gamert "xinput.lib" )
 	target_link_libraries( gamert tinyxml2_a )
-	target_link_libraries( gamert libantenna_a)
+	target_link_libraries( gamert antenna_a)
 else()
 # TODO: Support other platforms
 endif()
