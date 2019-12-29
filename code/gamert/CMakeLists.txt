@@ -60,6 +60,11 @@ FILE(GLOB_RECURSE GAMERT_UTILS_INC_FILES "inc/utils/*.hpp")
 include_directories(inc/utils)
 aux_source_directory(src/utils GAMERT_UTILS_SRC_FILES)
 
+FILE(GLOB_RECURSE GAMERT_NETWORKS_INC_FILES "inc/networks/*.hpp")
+include_directories(inc/networks)
+aux_source_directory(src/networks GAMERT_NETWORKS_SRC_FILES)
+
+
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	message("[gamert] Add executable and link libs -------------------------------")
 	add_executable( gamert WIN32
@@ -73,6 +78,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_OS_RELATED_INC_FILES}
 		${GAMERT_OSYS_INC_FILES}
 		${GAMERT_UTILS_INC_FILES}
+		${GAMERT_NETWORKS_INC_FILES}
 		#Source files:
 		${GAMERT_VKLAYER_SRC_FILES}
 		${GAMERT_GRAPHICS_SRC_FILES}
@@ -81,6 +87,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_OS_RELATED_SRC_FILES}
 		${GAMERT_OSYS_SRC_FILES}
 		${GAMERT_UTILS_SRC_FILES}
+		${GAMERT_NETWORKS_SRC_FILES}
 	)
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 	target_link_libraries( gamert "xinput.lib" )

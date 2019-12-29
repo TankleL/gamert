@@ -12,8 +12,8 @@
 #include "filter-lscene.hpp"
 #include "filter-vscene.hpp"
 #include "resmgr-runtime.hpp"
+#include "networksmgr.hpp"
 
-#include "antenna.hpp"
 
 #define	FRAMES_FLIPPING_INTERVAL		16.f
 
@@ -80,12 +80,19 @@ void init_gamert_app(HWND hwnd)
 			ResMgrRuntime::get_instance()
 				.get_logic_scene("default"));
 
+	// init networks layer
+	NetworksMgr::get_instance().startup();
+
 	// commit
 	g_update_function = render_update;
 }
 
 void uninit_gamert_app()
 {
+	VKContext::get_instance().wait_device_idle();
+
+	NetworksMgr::get_instance().shutdown();
+
 	ResMgrRuntime::get_instance().purge_visual_scenes();
 
 	g_render.unint();
@@ -140,16 +147,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	float elapsed = 0.f;
 
-	antenna::config::tcp_connections.push_back(
-		antenna::config::tcp_connection_t(
-			"127.0.0.1",
-			8088,
-			antenna::ST_GameServer
-		));
-
-	antenna::Antenna at;
-	at.startup();
-
 	// Run the message loop.
 	MSG msg = { };
 	while (msg.message != WM_QUIT)
@@ -173,9 +170,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 		}
 	}
 
-	at.shutdown();
-
-	VKContext::get_instance().wait_device_idle();
 	uninit_gamert_app();
 
 	return 0;
