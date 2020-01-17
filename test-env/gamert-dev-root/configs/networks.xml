@@ -1,3 +1,3 @@
 <NetworksConfig>
-	<Connection ServerType="GameServer" RemoteAddr="127.0.0.1" Port="8088" KeepAlive="true"/>
+	<Connection ServerType="GameServer" RemoteAddr="127.0.0.1" Port="8088" EnableHeartbeats="true"/>
 </NetworksConfig>

@@ -9,6 +9,11 @@ class ConfigMgr : public Singleton<ConfigMgr>
 {
 	DECL_SINGLETON_CTOR(ConfigMgr);
 public:
-	
+	void load_config();
+
+private:
+	void _load_cfg_master();
+	void _load_cfg_network();
+
 };
 
