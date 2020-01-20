@@ -12,8 +12,12 @@ public:
 	void load_config();
 
 private:
+	// parse and load master config
 	void _load_cfg_master();
-	void _load_cfg_network();
+	void _load_cfg_master_subcfgs(const void* xnode);
+
+	// parse and load networks config
+	void _load_cfg_networks(const std::string& configpath);
 
 };
 

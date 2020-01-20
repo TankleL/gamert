@@ -6,10 +6,10 @@ namespace ConfigNetworks
 {
 	typedef struct _st_connection
 	{
-		std::string server_type;
-		std::string remote_ipaddr;
-		int			port;
-		bool		enable_heartbeats;
+		std::string		remote_ipaddr;
+		std::uint16_t	port;
+		int				server_type;
+		bool			enable_heartbeats;
 	} connection_t;
 
 	extern std::vector<connection_t>	connections;

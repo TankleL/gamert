@@ -13,7 +13,7 @@
 #include "filter-vscene.hpp"
 #include "resmgr-runtime.hpp"
 #include "networksmgr.hpp"
-
+#include "configmgr.hpp"
 
 #define	FRAMES_FLIPPING_INTERVAL		16.f
 
@@ -36,6 +36,9 @@ update_frame_fnp_t g_update_function = dummy_update;
 
 void init_gamert_app(HWND hwnd)
 {
+	// load configuration
+	ConfigMgr::get_instance().load_config();
+	
 	// init vulkan context
 	VKContext::get_instance().init("gamert",
 		"gamert engine",

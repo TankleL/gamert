@@ -1,3 +1,4 @@
 <NetworksConfig>
-	<Connection ServerType="GameServer" RemoteAddr="127.0.0.1" Port="8088" EnableHeartbeats="true"/>
+	<const Name="GameServer" Value="1" Type="int32"/>
+	<Connection ServerType="{$GameServer}" RemoteAddr="127.0.0.1" Port="8088" EnableHeartbeats="true"/>
 </NetworksConfig>

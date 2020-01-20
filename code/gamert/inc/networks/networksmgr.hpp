@@ -14,6 +14,9 @@ public:
 	void reconnect(bool force);
 
 private:
+	void _reload_networkcfg();
+
+private:
 	antenna::Antenna	_antenna;
 };
 
