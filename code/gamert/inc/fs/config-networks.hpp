@@ -12,5 +12,6 @@ namespace ConfigNetworks
 		bool			enable_heartbeats;
 	} connection_t;
 
-	extern std::vector<connection_t>	connections;
+	extern std::unordered_map<std::string, std::any>	constants;
+	extern std::vector<connection_t>					connections;
 }

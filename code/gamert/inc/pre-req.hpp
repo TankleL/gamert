@@ -21,6 +21,7 @@
 #include <unordered_map>
 #include <cassert>
 #include <functional>
+#include <any>
 
 // GRT Macros - Game-RT Macros
 #if defined(DEBUG) || defined(_DEBUG)

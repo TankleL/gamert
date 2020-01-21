@@ -18,6 +18,7 @@ private:
 
 	// parse and load networks config
 	void _load_cfg_networks(const std::string& configpath);
-
+	void _load_cfg_networks_constants(const void* xnetworkscfg);
+	void _load_cfg_networks_connections(const void* xnetworkscfg);
 };
 

@@ -64,6 +64,8 @@ FILE(GLOB_RECURSE GAMERT_NETWORKS_INC_FILES "inc/networks/*.hpp")
 include_directories(inc/networks)
 aux_source_directory(src/networks GAMERT_NETWORKS_SRC_FILES)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	message("[gamert] Add executable and link libs -------------------------------")
