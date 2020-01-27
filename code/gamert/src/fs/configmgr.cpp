@@ -5,6 +5,8 @@
 using namespace std;
 
 const char* HardCoded_DefaultMasterConfigPath = "configs/master.xml";
+const std::regex ConfigMgr::_srgx_prs_int32_attr0("\\{.*\\}");
+const std::regex ConfigMgr::_srgx_prs_int32_attr1("\\$\\w*");
 
 ConfigMgr::ConfigMgr()
 {}
@@ -89,6 +91,7 @@ void ConfigMgr::_load_cfg_networks(const std::string& configpath)
 			"NetworksConfig"))
 		{
 			_load_cfg_networks_constants(xnetworkscfg);
+			_load_cfg_networks_connections(xnetworkscfg);
 		}
 		else
 		{
@@ -110,7 +113,7 @@ void ConfigMgr::_load_cfg_networks_constants(const void* xnetworkscfg)
 	while (nullptr != xiter)
 	{
 		if (GRT_IS_STRING_EQUAL(
-			xiter->Name,
+			xiter->Name(),
 			"Const"))
 		{
 			if (GRT_IS_STRING_EQUAL(
@@ -134,15 +137,65 @@ void ConfigMgr::_load_cfg_networks_connections(const void* xnetworkscfg)
 	while (nullptr != xiter)
 	{
 		if (GRT_IS_STRING_EQUAL(
-			xiter->Name,
+			xiter->Name(),
 			"Connection"))
 		{
 			ConfigNetworks::connection_t	conn;
 			conn.remote_ipaddr = xiter->Attribute("RemoteAddr");
 			conn.port = (uint16_t)xiter->IntAttribute("Port");
 			conn.enable_heartbeats = xiter->BoolAttribute("EnableHeartbeats");
+			conn.server_type = _parse_int32_attr(xiter->Attribute("ServerType"),
+				ConfigNetworks::constants);
 
 			ConfigNetworks::connections.push_back(conn);
 		}
+
+		xiter = xiter->NextSiblingElement();
 	}
 }
+
+int32_t ConfigMgr::_parse_int32_attr(
+	const char* attr,
+	const std::unordered_map<std::string, std::any>& dict)
+{
+	int32_t res = 0;
+	std::cmatch	cm_script;
+	if (std::regex_match(
+		attr,
+		cm_script,
+		_srgx_prs_int32_attr0,
+		std::regex_constants::match_not_null))
+	{ // attr is a script
+		//TODO: use lua as the script language, now we use regex matching for the prototype
+		std::string script(
+			cm_script[0].str().c_str() + 1,
+			cm_script[0].length() - 2);
+
+		std::smatch sm_valname;
+		if (std::regex_match(
+			script,
+			sm_valname,
+			_srgx_prs_int32_attr1
+		))
+		{
+			std::string name(
+				sm_valname[0].str().c_str() + 1,
+				sm_valname[0].length() - 1);
+			const auto& hit = dict.find(name);
+			if (hit != dict.cend() &&
+				hit->second.type() == typeid(int32_t))
+			{
+				res = std::any_cast<int32_t>(hit->second);
+			}
+		}
+	}
+	else
+	{ // attr is plain text
+		std::stringstream	ss;
+		ss << attr;
+		ss >> res;
+	}
+
+	return res;
+}
+

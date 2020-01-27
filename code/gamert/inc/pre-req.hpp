@@ -22,6 +22,7 @@
 #include <cassert>
 #include <functional>
 #include <any>
+#include <regex>
 
 // GRT Macros - Game-RT Macros
 #if defined(DEBUG) || defined(_DEBUG)
