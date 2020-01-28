@@ -8,7 +8,7 @@ NetworksMgr::NetworksMgr()
 void NetworksMgr::startup()
 {
 	_reload_networkcfg();
-	_antenna.startup();
+	_antenna.startup(this);
 }
 
 void NetworksMgr::shutdown()
@@ -35,3 +35,12 @@ void NetworksMgr::_reload_networkcfg()
 	}
 }
 
+void NetworksMgr::on_connected(antenna::Antenna& antenna)
+{
+
+}
+
+void NetworksMgr::on_connection_error(antenna::Antenna& antenna)
+{
+
+}
