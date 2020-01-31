@@ -6,6 +6,7 @@
 #include "logicmgr.hpp"
 #include "vscenegraph.hpp"
 #include "lnode2d-move.hpp"
+#include "opt-bindvnode.hpp"
 
 class _FilterLScene_XmlVisitor;
 
@@ -123,54 +124,57 @@ private:
 			node->set_name(name);
 		}
 
-		const char* bind_vscene = element.Attribute("BindVScene");
-		const char* bind_vnode = element.Attribute("BindVNode");
-		if (bind_vscene && bind_vnode)
+		return node;
+	}
+
+	LNode* _proc_opt_bindvnode(
+		const tinyxml2::XMLElement& element)
+	{
+		if (GRT_IS_CLASS_PTR(_curnode, IOptBindVNode))
 		{
-			VSceneGraph* vscene = ResMgrRuntime::get_instance()
-				.get_visual_scene(bind_vscene);
-			if (!vscene)
-			{
-				delete node;
-				throw std::runtime_error(
-					"the given BindVScene not found.");
-			}
+			IOptBindVNode* node = dynamic_cast<IOptBindVNode*>(_curnode);
 
-			VNode* vroot = vscene->get_root_node();
-			if (!vroot)
-			{
-				delete node;
-				throw std::runtime_error(
-					"the given BindVScene doesn't have root node.");
-			}
+			const char* bind_vscene = element.Attribute("VScene");
+			const char* bind_vnode = element.Attribute("VNode");
 
-			VNode* target = (VNode*)vroot->get_child(bind_vnode);
-			if (target)
+			if (bind_vscene && bind_vnode)
 			{
-				if (GRT_IS_CLASS_PTR(target, VNode2d))
+				VSceneGraph* vscene = ResMgrRuntime::get_instance()
+					.get_visual_scene(bind_vscene);
+				if (!vscene)
 				{
-					node->bind((VNode2d*)target);
+					throw std::runtime_error(
+						"the given BindVScene not found.");
+				}
+
+				VNode* vroot = vscene->get_root_node();
+				if (!vroot)
+				{
+					throw std::runtime_error(
+						"the given BindVScene doesn't have root node.");
+				}
+
+				VNode* target = (VNode*)vroot->get_child(bind_vnode);
+				if (target)
+				{
+					node->bind_vnode(target);
 				}
 				else
 				{
-					delete node;
-					throw std::runtime_error(
-						"the given BindVNode is not a 2d node.");
+					throw std::runtime_error("bad vscene params.");
 				}
 			}
 			else
 			{
-				delete node;
 				throw std::runtime_error("bad vscene params.");
 			}
 		}
 		else
 		{
-			delete node;
-			throw std::runtime_error("bad vscene params.");
+			throw std::runtime_error("currnode does not support bind vnode.");
 		}
 
-		return node;
+		return nullptr;
 	}
 
 private:
@@ -187,6 +191,7 @@ _FilterLScene_NodeProcTable::_FilterLScene_NodeProcTable()
 {
 	_procs["GraphRoot"] = &_FilterLScene_XmlVisitor::_proc_graphroot;
 	_procs["Node2d-Move"] = &_FilterLScene_XmlVisitor::_proc_lnode2d_move;
+	_procs["OptBindVNode"] = &_FilterLScene_XmlVisitor::_proc_opt_bindvnode;
 }
 
 

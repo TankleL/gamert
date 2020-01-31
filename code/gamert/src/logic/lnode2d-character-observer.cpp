@@ -10,9 +10,17 @@ LNode2dCharacterObserver::LNode2dCharacterObserver()
 LNode2dCharacterObserver::~LNode2dCharacterObserver()
 {}
 
-void LNode2dCharacterObserver::bind(VNode2d* node)
+void LNode2dCharacterObserver::bind_vnode(VNode* node)
 {
-	_vnode = node;
+#if defined(DEBUG) || defined(_DEBUG)
+	VNode2d* check_node = dynamic_cast<VNode2d*>(node);
+	GRT_CHECK(
+		check_node != nullptr,
+		"the node is not a 2d node")
+	_vnode = check_node;
+#else
+	_vnode = static_cast<VNode2d*>(node);
+#endif
 }
 
 void LNode2dCharacterObserver::on_tick(const tick_param_t& param)

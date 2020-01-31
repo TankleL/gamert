@@ -12,9 +12,17 @@ LNode2dMove::LNode2dMove()
 LNode2dMove::~LNode2dMove()
 {}
 
-void LNode2dMove::bind(VNode2d* node)
+void LNode2dMove::bind_vnode(VNode* node)
 {
-	_vnode = node;
+#if defined(DEBUG) || defined(_DEBUG)
+	VNode2d* check_node = dynamic_cast<VNode2d*>(node);
+	GRT_CHECK(
+		check_node != nullptr,
+		"the node is not a 2d node")
+	_vnode = check_node;
+#else
+	_vnode = static_cast<VNode2d*>(node);
+#endif
 }
 
 void LNode2dMove::set_controller(int controller)
