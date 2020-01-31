@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SceneGraph>
+	<GraphRoot>
+		<Node2d-Character-Observer Name="obsvr1">
+			<OptBindVNode VScene="default" VNode="vmid"/>
+		</Node2d-Character-Observer>
+	</GraphRoot>
+</SceneGraph>

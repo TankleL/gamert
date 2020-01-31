@@ -24,11 +24,11 @@ void NetworksMgr::reconnect(bool force)
 void NetworksMgr::_reload_networkcfg()
 {
 	antenna::config::tcp_connections.clear();
-	for (const auto& cfg : antenna::config::tcp_connections)
+	for (const auto& cfg : ConfigNetworks::connections)
 	{
 		antenna::config::tcp_connections.push_back(
 			antenna::config::tcp_connection_t(
-				cfg.ipaddr,
+				cfg.remote_ipaddr,
 				cfg.port,
 				cfg.server_type
 			));
