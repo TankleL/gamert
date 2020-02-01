@@ -19,6 +19,7 @@
 #include <array>
 #include <cstdarg>
 #include <unordered_map>
+#include <unordered_set>
 #include <cassert>
 #include <functional>
 #include <any>

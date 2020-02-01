@@ -14,6 +14,7 @@
 #include "resmgr-runtime.hpp"
 #include "networksmgr.hpp"
 #include "configmgr.hpp"
+#include "luart.hpp"
 
 #define	FRAMES_FLIPPING_INTERVAL		16.f
 
@@ -38,6 +39,9 @@ void init_gamert_app(HWND hwnd)
 {
 	// load configuration
 	ConfigMgr::get_instance().load_config();
+
+	// start lua runtime
+	luart::init_runtime();
 	
 	// init vulkan context
 	VKContext::get_instance().init("gamert",
@@ -100,6 +104,8 @@ void uninit_gamert_app()
 
 	g_render.unint();
 	VKContext::get_instance().destroy();
+
+	luart::uninit_runtime();
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
