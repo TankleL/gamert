@@ -1,0 +1,2 @@
+
+networksmgr.startup()

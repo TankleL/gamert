@@ -87,8 +87,8 @@ void init_gamert_app(HWND hwnd)
 			ResMgrRuntime::get_instance()
 				.get_logic_scene("default"));
 
-	// init networks layer
-	NetworksMgr::get_instance().startup();
+	// call customized initialization process via dynopt
+	luart::run_script("scripts/root-app-init.lua");
 
 	// commit
 	g_update_function = render_update;

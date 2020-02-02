@@ -71,6 +71,10 @@ file(GLOB_RECURSE GAMERT_DYNOPT_LUA_INC_FILES "inc/dynopt-lua/*.hpp")
 include_directories(inc/dynopt-lua)
 aux_source_directory(src/dynopt-lua GAMERT_DYNOPT_LUA_SRC_FILES)
 
+file(GLOB_RECURSE GAMERT_DYNOPT_LUA_EXP_INC_FILES "inc/dynopt-lua-export/*.hpp")
+include_directories(inc/dynopt-lua-export)
+aux_source_directory(src/dynopt-lua-export GAMERT_DYNOPT_LUA_EXP_SRC_FILES)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -89,6 +93,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_UTILS_INC_FILES}
 		${GAMERT_NETWORKS_INC_FILES}
 		${GAMERT_DYNOPT_LUA_INC_FILES}
+		${GAMERT_DYNOPT_LUA_EXP_INC_FILES}
 		#Source files:
 		${GAMERT_VKLAYER_SRC_FILES}
 		${GAMERT_GRAPHICS_SRC_FILES}
@@ -99,6 +104,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_UTILS_SRC_FILES}
 		${GAMERT_NETWORKS_SRC_FILES}
 		${GAMERT_DYNOPT_LUA_SRC_FILES}
+		${GAMERT_DYNOPT_LUA_EXP_SRC_FILES}
 	)
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 	target_link_libraries( gamert "xinput.lib" )
