@@ -13,7 +13,7 @@ public:
 	void startup();
 	void shutdown();
 
-	void reconnect(bool force);
+	void reconnect(bool force = false);
 
 public:
 	// Antenna Event Handling

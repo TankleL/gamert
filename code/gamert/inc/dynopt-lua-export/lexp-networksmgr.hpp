@@ -12,5 +12,7 @@ namespace lexp
 
 	public:
 		static int _luafunc_startup(lua_State* L);
+		static int _luafunc_shutdown(lua_State* L);
+		static int _luafunc_reconnect(lua_State* L);
 	};
 }

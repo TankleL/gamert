@@ -39,5 +39,9 @@ namespace lexp
 
 #define EXPORT_LUABINDING(typelong, typeshort) \
 			lexp::ExportLuaBinding<typelong> _iv_exp_lb_##typeshort
+
+#define LUA_REPORT_ERROR(L, msg) \
+			lua_pushliteral(L, __FILE__ ": " __FUNCTION__ ": " msg); lua_error(L)
+
 }
 

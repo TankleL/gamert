@@ -1,8 +1,13 @@
 #pragma once
 
+#include <cstring>
+
 #if defined(WIN32)
 #	include <Windows.h>
 #	define VK_USE_PLATFORM_WIN32_KHR
+#	define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#else
+#	define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #endif
 
 #include <stdexcept>
