@@ -84,6 +84,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		#Header files:
 		"inc/pre-req.hpp"
 		"inc/singleton.hpp"
+		"inc/gamert-application.hpp"
 		${GAMERT_VKLAYER_INC_FILES}
 		${GAMERT_GRAPHICS_INC_FILES}
 		${GAMERT_FILESYS_INC_FILES}
@@ -105,6 +106,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 		${GAMERT_NETWORKS_SRC_FILES}
 		${GAMERT_DYNOPT_LUA_SRC_FILES}
 		${GAMERT_DYNOPT_LUA_EXP_SRC_FILES}
+		"src/gamert-application.cpp"
 	)
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 	target_link_libraries( gamert "xinput.lib" )

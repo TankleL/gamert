@@ -1,5 +1,4 @@
 #include "vkcontext.hpp"
-#include "vkapp.hpp"
 #include "vkutils.hpp"
 
 using namespace std;

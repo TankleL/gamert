@@ -1,5 +1,6 @@
 <MasterConfig>
 	<TopVersion Major="0" Minor="1" Build="0" Revision="0"/>
+	<MinGameFrameInterval Value="16.f"/>
 	<SubConfigs>
 		<Config Name="Networks" File="configs/networks.xml"/>
 	</SubConfigs>

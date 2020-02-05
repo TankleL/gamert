@@ -1,112 +1,18 @@
 #include "osenv.hpp"
 
-#include "vkapp.hpp"
 #include "vkcontext.hpp"
-#include "vkrenderer2d.hpp"
+#include "vkrenderer.hpp"
 #include "vscenegraph2d.hpp"
 #include "vnode-quad2d.hpp"
 #include "vmatrix.hpp"
-#include "joystick.hpp"
-#include "logicmgr.hpp"
 #include "lnode2d-move.hpp"
-#include "filter-lscene.hpp"
-#include "filter-vscene.hpp"
-#include "resmgr-runtime.hpp"
-#include "networksmgr.hpp"
-#include "configmgr.hpp"
-#include "luart.hpp"
+#include "win-gamert-app.hpp"
+#include "ltimer.hpp"
 
 #define	FRAMES_FLIPPING_INTERVAL		16.f
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-typedef void(*update_frame_fnp_t)(void);
-
-VKRenderer2d	g_render;
-
-void dummy_update()
-{}
-
-void render_update()
-{
-	LogicMgr::get_instance().tick();
-	g_render.update(30.f);
-}
-
-update_frame_fnp_t g_update_function = dummy_update;
-
-void init_gamert_app(HWND hwnd)
-{
-	// load configuration
-	ConfigMgr::get_instance().load_config();
-
-	// start lua runtime
-	luart::init_runtime();
-	
-	// init vulkan context
-	VKContext::get_instance().init("gamert",
-		"gamert engine",
-		VK_MAKE_VERSION(1, 0, 0),
-		VK_MAKE_VERSION(1, 0, 0),
-		hwnd);
-
-
-	VKContext::get_instance().register_renderer(&g_render);
-	VKContext::get_instance().resize();
-
-	// init joystick
-	JoyStick::get_instance().check_controllers();
-
-	// init visual scene
-	{
-		FilterVScene fvs;
-		VSceneGraph* vscene = fvs.load("vscene/default.xml");
-		ResMgrRuntime::get_instance()
-			.manage_visual_scene("default", vscene);
-	}
-
-	// init logic scene
-	{
-		FilterLScene fls;
-		LSceneGraph* lscene = fls.load("lscene/default.xml");
-		ResMgrRuntime::get_instance()
-			.manage_logic_scene("default", lscene);
-	}
-
-	// init renderer
-	g_render.bind_scene_graph(
-		(VSceneGraph2d*)
-		ResMgrRuntime::get_instance()
-		.get_visual_scene("default"));
-
-	// init logic layers
-	LogicMgr::get_instance()
-		.add_channel(
-			"default",
-			FRAMES_FLIPPING_INTERVAL,
-			ResMgrRuntime::get_instance()
-				.get_logic_scene("default"));
-
-	// call customized initialization process via dynopt
-	luart::run_script("scripts/root-app-init.lua");
-
-	// commit
-	g_update_function = render_update;
-}
-
-void uninit_gamert_app()
-{
-	VKContext::get_instance().wait_device_idle();
-
-	NetworksMgr::get_instance().shutdown();
-
-	ResMgrRuntime::get_instance().purge_visual_scenes();
-
-	g_render.unint();
-	VKContext::get_instance().destroy();
-
-	luart::uninit_runtime();
-}
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow)
 {
@@ -148,8 +54,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 
 	ShowWindow(hwnd, nCmdShow);
 	
-	init_gamert_app(hwnd);
+	std::unique_ptr<GamertApplication> app(new WinGamertApp(hwnd));
 
+	app->init();
+	
 	// set fps timer
 	LTimer fps_timer;
 	fps_timer.snapshot();
@@ -174,12 +82,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR pCmdLine, int nCmdShow
 				Sleep((DWORD)(FRAMES_FLIPPING_INTERVAL - elapsed));
 			}
 
-			g_update_function();
+			app->do_min_gameframe();
 			fps_timer.snapshot();
 		}
 	}
 
-	uninit_gamert_app();
+	app->uninit();
 
 	return 0;
 }
