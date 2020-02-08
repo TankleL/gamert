@@ -6,6 +6,7 @@
 namespace ConfigMaster
 {
 
+	extern float	min_gameframe_interval;
 	extern std::unordered_map<std::string, std::string>  subconfigs;
 
 }

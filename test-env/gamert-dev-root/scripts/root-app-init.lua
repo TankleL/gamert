@@ -1,5 +1,6 @@
 
-networksmgr.startup()
-networksmgr.reconnect()
-networksmgr.reconnect(true)
-networksmgr.reconnect(1.2)
+gamert.networksmgr.startup()
+
+FooClassA = BtClass(function(self)
+
+end)

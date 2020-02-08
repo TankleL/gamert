@@ -26,6 +26,9 @@ namespace luart
 	namespace _internal
 	{
 		extern std::unordered_set<std::string>	loaded_files;
+
+		void config_lua_package();
+		void boot();
 	}
 }
 

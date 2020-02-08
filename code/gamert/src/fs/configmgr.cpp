@@ -37,6 +37,7 @@ void ConfigMgr::_load_cfg_master()
 			xmastercfg->Name(),
 			"MasterConfig"))
 		{
+			_load_cfg_master_min_gameframe_interval(xmastercfg->LastChildElement("MinGameFrameInterval"));
 			_load_cfg_master_subcfgs(xmastercfg->LastChildElement("SubConfigs"));
 		}
 		else
@@ -72,6 +73,12 @@ void ConfigMgr::_load_cfg_master_subcfgs(const void* xnode)
 		}
 		xscfg = xscfg->NextSiblingElement();
 	}
+}
+
+void ConfigMgr::_load_cfg_master_min_gameframe_interval(const void* xnode)
+{
+	const tinyxml2::XMLElement& xmingameframeitvl = *((const tinyxml2::XMLElement*)xnode);
+	ConfigMaster::min_gameframe_interval = xmingameframeitvl.FloatAttribute("Value");
 }
 
 void ConfigMgr::_load_cfg_networks(const std::string& configpath)

@@ -19,9 +19,11 @@ namespace lexp
 
 	public:
 		void register_entries(lua_State* L);
-	
-	public:
 		void add(std::shared_ptr<ILuaExport> entry);
+		void add_into_gamert();
+
+	public:
+		void _register_lua_gamert_object(lua_State* L);
 
 	private:
 		std::vector<std::shared_ptr<ILuaExport>>	_entries;

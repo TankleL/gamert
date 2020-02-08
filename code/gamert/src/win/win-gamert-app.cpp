@@ -77,11 +77,6 @@ void WinGamertApp::on_min_gameframe()
 	g_render.update(30.f);
 }
 
-float WinGamertApp::min_gameframe_interval() const 
-{
-	return 16.f;
-}
-
 void WinGamertApp::on_sized()
 {
 	VKContext::get_instance().resize();

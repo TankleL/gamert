@@ -5,8 +5,10 @@ EXPORT_LUABINDING(lexp::LExp_NetworksMgr, LExp_NetworksMgr);
 
 void lexp::LExp_NetworksMgr::on_register(lua_State* L)
 {
+	lua_getglobal(L, "gamert");
+
 	// networksmgr - create a lua object
-	lua_createtable(L, 0, 2);
+	lua_newtable(L);
 
 	// add a function - startup()
 	lua_pushcfunction(L, LExp_NetworksMgr::_luafunc_startup);
@@ -16,12 +18,13 @@ void lexp::LExp_NetworksMgr::on_register(lua_State* L)
 	lua_pushcfunction(L, LExp_NetworksMgr::_luafunc_shutdown);
 	lua_setfield(L, -2, "shutdown");
 	
-	// add a function - reconnect
+	// add a function - reconnect()
 	lua_pushcfunction(L, LExp_NetworksMgr::_luafunc_reconnect);
 	lua_setfield(L, -2, "reconnect");
 
-	// name it
-	lua_setglobal(L, "networksmgr");
+	lua_setfield(L, -2, "networksmgr");
+
+	lua_pop(L, -1);
 }
 
 int lexp::LExp_NetworksMgr::_luafunc_startup(lua_State* L)

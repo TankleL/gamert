@@ -29,6 +29,7 @@
 #include <functional>
 #include <any>
 #include <regex>
+#include <filesystem>
 
 // GRT Macros - Game-RT Macros
 #if defined(DEBUG) || defined(_DEBUG)

@@ -15,6 +15,7 @@ private:
 	// parse and load master config
 	void _load_cfg_master();
 	void _load_cfg_master_subcfgs(const void* xnode);
+	void _load_cfg_master_min_gameframe_interval(const void* xnode);
 
 	// parse and load networks config
 	void _load_cfg_networks(const std::string& configpath);

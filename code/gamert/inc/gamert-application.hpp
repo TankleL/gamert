@@ -13,8 +13,8 @@ public:
 	void uninit();
 	void do_min_gameframe();
 	void sized();
+	virtual float min_gameframe_interval() const;
 
-	virtual float min_gameframe_interval() const = 0;
 	virtual void on_min_gameframe() = 0;
 	virtual void on_init_vklayer() = 0;
 	virtual void on_uninit_vklayer() = 0;

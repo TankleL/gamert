@@ -2,12 +2,18 @@
 #include "fileop.hpp"
 
 ResMgrStatic::ResMgrStatic()
-	: _res_root(TEST_RESOURCES_ROOT)
-{}
+{
+	set_resources_root_path(TEST_RESOURCES_ROOT);
+}
 
 void ResMgrStatic::set_resources_root_path(const std::string& path)
 {
-	_res_root = path;
+	_res_root = std::filesystem::absolute(path).u8string();
+}
+
+std::string ResMgrStatic::get_resources_root_path() const
+{
+	return _res_root;
 }
 
 void ResMgrStatic::read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const

@@ -10,6 +10,7 @@ class ResMgrStatic
 
 public:
 	void set_resources_root_path(const std::string& path);
+	std::string get_resources_root_path() const;
 	void read_binary_file(std::vector<std::uint8_t>& dest, const std::string& respath) const;
 	std::string fullpath(const std::string& respath) const;
 

@@ -15,7 +15,6 @@ public:
 	virtual void on_init_renderers() override;
 	virtual void on_uninit_renderers() override;
 	virtual void on_min_gameframe() override;
-	virtual float min_gameframe_interval() const override;
 	virtual void on_sized() override;
 
 private:

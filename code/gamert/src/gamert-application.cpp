@@ -56,3 +56,13 @@ void GamertApplication::do_min_gameframe()
 	this->on_min_gameframe();
 }
 
+void GamertApplication::sized()
+{
+	this->on_sized();
+}
+
+float GamertApplication::min_gameframe_interval() const
+{
+	return ConfigMaster::min_gameframe_interval;
+}
+
