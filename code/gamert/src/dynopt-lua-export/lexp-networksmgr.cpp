@@ -5,7 +5,7 @@ EXPORT_LUABINDING(lexp::LExp_NetworksMgr, LExp_NetworksMgr);
 
 void lexp::LExp_NetworksMgr::on_register(lua_State* L)
 {
-	int tops = lua_gettop(L);
+	GRT_LUA_STACKCHECK_BEGIN(L);
 
 	lua_getglobal(L, "gamert");
 
@@ -28,9 +28,7 @@ void lexp::LExp_NetworksMgr::on_register(lua_State* L)
 
 	lua_pop(L, -1);
 	
-	GRT_CHECK(
-		tops == lua_gettop(L),
-		"stack is unbalanced.");
+	GRT_LUA_STACKCHECK_END(L);
 }
 
 int lexp::LExp_NetworksMgr::_luafunc_startup(lua_State* L)

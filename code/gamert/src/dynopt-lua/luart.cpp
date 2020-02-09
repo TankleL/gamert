@@ -106,11 +106,7 @@ void luart::game::app_init()
 	lua_getfield(global_state, -1, "on_app_init");
 	lua_pushvalue(global_state, -2);
 
-	int status = lua_pcall(global_state, 1, 0, 0);
-	if (status && lua_isstring(global_state, -1))
-	{
-		const char* msg = lua_tostring(global_state, 0);
-	}
+	GRT_LUA_CHECK(global_state, lua_pcall(global_state, 1, 0, 0));
 	lua_pop(global_state, 1);
 
 	GRT_CHECK(
