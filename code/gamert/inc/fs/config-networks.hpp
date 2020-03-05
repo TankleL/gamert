@@ -8,7 +8,7 @@ namespace ConfigNetworks
 	{
 		std::string		remote_ipaddr;
 		std::uint16_t	port;
-		int				server_type;
+		int				connection_id;
 		bool			enable_heartbeats;
 	} connection_t;
 

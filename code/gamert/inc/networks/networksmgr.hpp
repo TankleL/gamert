@@ -6,7 +6,6 @@
 
 class NetworksMgr
 	: public Singleton<NetworksMgr>
-	, public antenna::IAntennaEventHandler
 {
 	DECL_SINGLETON_CTOR(NetworksMgr);
 public:
@@ -15,16 +14,21 @@ public:
 
 	void reconnect(bool force = false);
 
-public:
-	// Antenna Event Handling
-	virtual void on_connected(antenna::Antenna& antenna) override;
-	virtual void on_connection_error(antenna::Antenna& antenna) override;
+private:
+	class _AtEvtHandler : public antenna::IAntennaEventHandler
+	{
+	public:
+		// Antenna Event Handling
+		virtual void on_event(antenna::Antenna& antenna, Events evt) override;
+		virtual void on_error(antenna::Antenna& antenna, Errors err) override;
+	};
 
 private:
 	void _reload_networkcfg();
 
 private:
-	antenna::Antenna	_antenna;
+	antenna::Antenna				_antenna;
+	std::shared_ptr<_AtEvtHandler> _athdlr;
 };
 
 

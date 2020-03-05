@@ -2,13 +2,14 @@
 #include "config-networks.hpp"
 
 NetworksMgr::NetworksMgr()
+	: _athdlr(std::make_shared<_AtEvtHandler>())
 {}
 
 
 void NetworksMgr::startup()
 {
 	_reload_networkcfg();
-	_antenna.startup(this);
+	_antenna.startup(_athdlr);
 }
 
 void NetworksMgr::shutdown()
@@ -30,17 +31,21 @@ void NetworksMgr::_reload_networkcfg()
 			antenna::config::tcp_connection_t(
 				cfg.remote_ipaddr,
 				cfg.port,
-				cfg.server_type
+				cfg.connection_id
 			));
 	}
 }
 
-void NetworksMgr::on_connected(antenna::Antenna& antenna)
+void NetworksMgr::_AtEvtHandler::on_event(
+	antenna::Antenna& antenna,
+	Events evt)
 {
 
 }
 
-void NetworksMgr::on_connection_error(antenna::Antenna& antenna)
+void NetworksMgr::_AtEvtHandler::on_error(
+	antenna::Antenna& antenna,
+	Errors err)
 {
 
 }

@@ -156,11 +156,12 @@ void ConfigMgr::_load_cfg_networks_connections(const void* xnetworkscfg)
 			"Connection"))
 		{
 			ConfigNetworks::connection_t	conn;
+
+			conn.connection_id = _parse_int32_attr(xiter->Attribute("ID"),
+				ConfigNetworks::constants);
 			conn.remote_ipaddr = xiter->Attribute("RemoteAddr");
 			conn.port = (uint16_t)xiter->IntAttribute("Port");
 			conn.enable_heartbeats = xiter->BoolAttribute("EnableHeartbeats");
-			conn.server_type = _parse_int32_attr(xiter->Attribute("ServerType"),
-				ConfigNetworks::constants);
 
 			ConfigNetworks::connections.push_back(conn);
 		}
