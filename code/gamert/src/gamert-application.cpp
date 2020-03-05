@@ -36,7 +36,7 @@ void GamertApplication::init()
 
 	luart::game::app_init();
 
-	luart::uninit_runtime();
+	//luart::uninit_runtime();
 }
 
 void GamertApplication::uninit()
