@@ -1,3 +1,3 @@
-[submodule "code/gamert/deps/antenna"]
-	path = code/gamert/deps/antenna
-	url = https://github.com/tanklel/antenna.git
+[submodule "code/deps/lotus"]
+	path = code/deps/lotus
+	url = https://github.com/tanklel/lotus.git

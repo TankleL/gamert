@@ -12,7 +12,7 @@ message("Vulkan include: " ${Vulkan_INCLUDE_DIRS})
 
 include_directories( ${TINYXML2_INC} )
 include_directories( ${LUA535_INC} )
-include_directories( ${ANTENNA_INC} )
+include_directories( ${LOTUS_INC} )
 
 #Define macros
 add_definitions(-DTEST_RESOURCES_ROOT="../../../test-env/gamert-dev-root")
@@ -107,7 +107,7 @@ if(${GRT_TARGET_OS_PLATFORM} STREQUAL "Windows")
 	target_link_libraries( gamert ${Vulkan_LIBRARIES} )
 	target_link_libraries( gamert "xinput.lib" )
 	target_link_libraries( gamert tinyxml2_a )
-	target_link_libraries( gamert antenna_a )
+	target_link_libraries( gamert lotus_a )
 	target_link_libraries( gamert lua_a )
 else()
 # TODO: Support other platforms
